@@ -4,226 +4,356 @@
     <meta name="google-site-verification" content="dF-bCP0mGJ_CmMYT4IuRVNIFDSJqzaY26YTx6CpzPXg" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akshat's Multiplayer Chess Game | Play Free Online</title>
+    <title>Akshat's Multiplayer Chess | Elite Arena</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* =========================================
+           CUSTOM THEME: OBSIDIAN SLATE & FROSTED GLASS
+        ========================================= */
         :root {
-            --bg-color: #0a0a0a;
-            --surface: #171717;
-            --surface-hover: #262626;
-            --border: #333333;
-            --text-main: #f5f5f5;
-            --text-muted: #888888;
-            --primary: #ffffff;
+            --bg-base: #050507;
+            --bg-surface: #0e0e12;
+            --bg-card: #141419;
+            --border-subtle: #22222d;
+            --border-glow: rgba(59, 130, 246, 0.3);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
             --accent: #3b82f6;
             --accent-hover: #2563eb;
+            --accent-glow: rgba(59, 130, 246, 0.15);
             --danger: #ef4444;
             --success: #10b981;
-            --chat-you: #2563eb;
-            --chat-opp: #2a2a2a;
             --gold: #f59e0b;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, transparent 70%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #111827 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, #030712 0%, transparent 50%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 15px;
+            padding: 20px;
             overflow-x: hidden;
         }
 
-        /* Splash Screen */
+        /* =========================================
+           NEW: CINEMATIC CYBER SPLASH SCREEN
+        ========================================= */
         #splash-screen {
-            position: fixed; inset: 0; background: var(--bg-color); z-index: 9999;
+            position: fixed; inset: 0; background: #030306; z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.8s ease-out, visibility 0.8s;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+            overflow: hidden;
+        }
+        .splash-glow-orb {
+            position: absolute; width: 340px; height: 340px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%; animation: floatOrb 3.5s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+        .splash-icon-wrapper {
+            position: relative; width: 100px; height: 100px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 26px;
+        }
+        .splash-ring {
+            position: absolute; inset: 0; border: 2px dashed rgba(59, 130, 246, 0.4);
+            border-radius: 50%; animation: rotateRing 7s linear infinite;
+        }
+        .splash-ring-inner {
+            position: absolute; inset: 8px; border: 2px solid rgba(255, 255, 255, 0.08);
+            border-top-color: var(--accent); border-radius: 50%; animation: rotateRing 2.2s linear infinite reverse;
+        }
+        .splash-icon { 
+            font-size: 3rem; filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.7)); 
+            animation: pulsePiece 2s ease-in-out infinite; 
         }
         .splash-title {
-            font-size: 3.5rem; font-weight: 900; letter-spacing: -1px;
-            background: linear-gradient(to right, #ffffff, #888888);
+            font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 40%, #9ca3af 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            animation: pulse 2s infinite;
+            margin-bottom: 6px; text-align: center;
         }
-        .splash-subtitle { color: var(--accent); margin-top: 10px; font-weight: 600; letter-spacing: 2px; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .splash-tagline {
+            color: var(--text-muted); font-size: 0.8rem; font-weight: 600; letter-spacing: 3px;
+            text-transform: uppercase; margin-bottom: 28px;
+        }
+        .splash-bar-container {
+            width: 220px; height: 4px; background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px; overflow: hidden; position: relative; border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .splash-bar-fill {
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
+            border-radius: 10px; transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .splash-status {
+            color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+            margin-top: 14px; letter-spacing: 0.5px;
+        }
+        @keyframes rotateRing { 100% { transform: rotate(360deg); } }
+        @keyframes floatOrb { 0% { transform: scale(0.9); opacity: 0.6; } 100% { transform: scale(1.2); opacity: 1; } }
+        @keyframes pulsePiece { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.9)); } }
 
-        /* Ban Lock Overlay */
+        /* Ban Screen */
         #ban-screen {
-            display: none; position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: none; position: fixed; inset: 0; background: #030305; z-index: 10000;
             flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
         }
 
-        .screen { display: none; width: 100%; max-width: 1050px; animation: fadeIn 0.5s ease forwards; }
+        .screen { display: none; width: 100%; max-width: 1050px; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .screen.active { display: flex; flex-direction: column; align-items: center; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Typography & Header */
-        .logo { font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 5px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.1); cursor: pointer; }
-        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 40px; font-weight: 500; text-align: center; }
+        /* Header / Logo */
+        .logo { 
+            font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 5px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.1); 
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .logo:active { transform: scale(0.97); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 35px; font-weight: 500; text-align: center; }
 
-        /* Menus */
-        .menu-container { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 340px; }
-        .btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); padding: 16px 20px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; backdrop-filter: blur(10px); }
-        .btn:hover { background: rgba(255,255,255,0.1); border-color: #555; transform: translateY(-2px); }
-        .btn-primary { background: var(--text-main); color: var(--bg-color); border: none; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
-        .btn-primary:hover { background: #e5e5e5; box-shadow: 0 0 30px rgba(255,255,255,0.4); }
+        /* =========================================
+           UI COMPONENTS & BUTTONS
+        ========================================= */
+        .menu-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 360px; }
         
-        .login-input { background: #000; border: 2px solid var(--border); color: #fff; padding: 16px; border-radius: 12px; font-family: 'Inter'; font-size: 1.2rem; text-align: center; width: 100%; outline: none; transition: 0.3s; margin-bottom: 15px; }
-        .login-input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-hover); }
+        .btn { 
+            background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-main); 
+            padding: 15px 20px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; 
+            transition: all 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: #1a1a24; border-color: var(--border-glow); transform: translateY(-1px); box-shadow: 0 6px 25px rgba(59,130,246,0.1); }
+        .btn:active { transform: translateY(1px); }
+        
+        .btn-primary { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+            color: #ffffff; border: none; box-shadow: 0 4px 20px rgba(59,130,246,0.3); 
+        }
+        .btn-primary:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 6px 25px rgba(59,130,246,0.4); }
+        
+        .btn-secondary { background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .btn-secondary:hover { background: rgba(59, 130, 246, 0.15); border-color: var(--accent); }
+
+        .login-input { 
+            background: #09090d; border: 1px solid var(--border-subtle); color: #fff; padding: 15px; 
+            border-radius: 10px; font-family: 'Plus Jakarta Sans'; font-size: 1rem; text-align: center; width: 100%; outline: none; 
+            transition: all 0.2s; margin-bottom: 12px; 
+        }
+        .login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
         /* Badges */
-        .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; margin-left: 6px; }
-        .badge-dev { background: #ef4444; color: #fff; }
-        .badge-vip { background: #f59e0b; color: #000; }
-        .badge-mod { background: #3b82f6; color: #fff; }
-        .badge-master { background: #10b981; color: #fff; }
+        .badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; }
+        .badge-dev { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-vip { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-mod { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-master { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-        /* Settings Modal */
-        #settings-modal, #admin-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .settings-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; width: 100%; max-width: 420px; }
-        .admin-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 25px; width: 100%; max-width: 750px; max-height: 85vh; display: flex; flex-direction: column; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        select { background: var(--bg-color); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; font-family: 'Inter'; outline: none; }
-
-        /* Admin Dashboard UI */
-        .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; }
-        .player-row .info { display: flex; flex-direction: column; gap: 4px; }
-        .player-row .actions { display: flex; gap: 6px; }
-        .btn-small { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface-hover); color: #fff; }
-        .btn-danger { border-color: var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: #fff; }
-
-        /* Matchmaking & Roster */
-        .loader-container { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; text-align: center; max-width: 400px; width: 100%; }
-        .spinner { width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        /* =========================================
+           MODALS & OVERLAYS
+        ========================================= */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(3, 3, 5, 0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .settings-box { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .admin-box { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 25px; width: 100%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
         
-        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; max-width: 850px; }
-        .roster-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .roster-card:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); transform: translateY(-4px); }
-        .r-avatar { font-size: 2.8rem; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
-        .r-name { font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; }
-        .r-elo { color: var(--accent); font-size: 0.9rem; font-family: 'JetBrains Mono'; font-weight: 600; }
+        select { 
+            background: #09090d; color: var(--text-main); border: 1px solid var(--border-subtle); 
+            padding: 10px 14px; border-radius: 8px; font-family: 'Plus Jakarta Sans'; outline: none; font-weight: 500; cursor: pointer; 
+        }
+        select:focus { border-color: var(--accent); }
 
-        /* Game UI */
+        /* Admin UI Elements */
+        .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: 10px; margin-bottom: 8px; }
+        .player-row .info { display: flex; flex-direction: column; gap: 3px; }
+        .player-row .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-small { padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-main); transition: 0.15s; }
+        .btn-small:hover { background: #22222d; }
+        .btn-danger { border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); }
+        .admin-toolbar { display: flex; gap: 8px; margin-bottom: 15px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 10px; border: 1px solid var(--border-subtle); flex-wrap: wrap; }
+
+        /* Matchmaking Loaders & Roster */
+        .loader-container { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 35px; text-align: center; max-width: 420px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+        .spinner { width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.08); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; width: 100%; max-width: 850px; }
+        .roster-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .roster-card:hover { border-color: var(--accent); background: #181822; transform: translateY(-3px); box-shadow: 0 10px 25px rgba(59,130,246,0.1); }
+        .r-avatar { font-size: 2.5rem; margin-bottom: 8px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+        .r-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 2px; }
+        .r-elo { color: var(--accent); font-size: 0.85rem; font-family: 'JetBrains Mono'; font-weight: 600; }
+
+        /* =========================================
+           ACTIVE CHESS MATCH LAYOUT
+        ========================================= */
         .match-layout { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
-        .board-column { width: 100%; max-width: 540px; display: flex; flex-direction: column; gap: 10px; }
-        .board-layout { display: flex; gap: 12px; }
+        .board-column { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+        .board-layout { display: flex; gap: 10px; }
         
         #board { 
-            width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
-            touch-action: none; -webkit-touch-callout: none; user-select: none;
+            width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-subtle); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); touch-action: none; -webkit-touch-callout: none; user-select: none;
         }
         
-        /* Themes */
-        .theme-default .white-1e1d7 { background-color: #ebecd0 !important; } .theme-default .black-3c85d { background-color: #739552 !important; }
+        /* Board Themes */
+        .theme-default .white-1e1d7 { background-color: #e5e7eb !important; } .theme-default .black-3c85d { background-color: #4b5563 !important; }
         .theme-wood .white-1e1d7 { background-color: #f0d9b5 !important; } .theme-wood .black-3c85d { background-color: #b58863 !important; }
-        .theme-cyber .white-1e1d7 { background-color: #2b2b46 !important; } .theme-cyber .black-3c85d { background-color: #121224 !important; }
-        .theme-emerald .white-1e1d7 { background-color: #e0f2fe !important; } .theme-emerald .black-3c85d { background-color: #0284c7 !important; }
+        .theme-cyber .white-1e1d7 { background-color: #312e81 !important; } .theme-cyber .black-3c85d { background-color: #1e1b4b !important; }
+        .theme-emerald .white-1e1d7 { background-color: #ecfdf5 !important; } .theme-emerald .black-3c85d { background-color: #059669 !important; }
         
-        .highlight-last { background-color: rgba(255, 255, 51, 0.4) !important; }
+        .highlight-last { background-color: rgba(59, 130, 246, 0.35) !important; }
         .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
-        .highlight-selected { background-color: rgba(20, 85, 30, 0.5) !important; }
+        .highlight-selected { background-color: rgba(16, 185, 129, 0.4) !important; }
         .highlight-legal { position: relative; }
         .highlight-legal::after {
             content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 25%; height: 25%; background-color: rgba(0, 0, 0, 0.3); border-radius: 50%; pointer-events: none; z-index: 2;
+            width: 22%; height: 22%; background-color: rgba(0, 0, 0, 0.35); border-radius: 50%; pointer-events: none; z-index: 2;
         }
-        .highlight-legal.has-piece::after { width: 80%; height: 80%; background-color: transparent; border: 5px solid rgba(0, 0, 0, 0.3); }
+        .highlight-legal.has-piece::after { width: 78%; height: 78%; background-color: transparent; border: 4px solid rgba(0, 0, 0, 0.35); }
 
-        .eval-container { width: 18px; background: #222; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border); }
-        .eval-fill { background: #fff; width: 100%; height: 50%; transition: height 0.5s ease; }
+        .eval-container { width: 14px; background: #09090d; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border-subtle); }
+        .eval-fill { background: #f3f4f6; width: 100%; height: 50%; transition: height 0.4s ease; }
 
-        .player-tag { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); }
+        .player-tag { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border-subtle); }
         .pt-info { display: flex; align-items: center; gap: 12px; }
-        .pt-name { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; }
-        .pt-captures { font-size: 1.1rem; color: var(--text-muted); letter-spacing: 2px; }
-        .pt-clock { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; background: #000; padding: 4px 10px; border-radius: 6px; color: #fff; border: 1px solid #333; }
+        .pt-name { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; }
+        .pt-captures { font-size: 1rem; color: var(--text-muted); letter-spacing: 1px; }
+        .pt-clock { font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 700; background: #050507; padding: 4px 10px; border-radius: 6px; color: #fff; border: 1px solid var(--border-subtle); }
 
-        .sidebar-column { flex: 1; min-width: 320px; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
-        .log-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; max-height: 670px; }
-        .status-msg { padding: 10px; margin-bottom: 10px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 0.95rem; font-weight: 600; text-align: center; }
-        .notation-history { height: 90px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 35px 1fr 1fr; gap: 4px; align-content: start; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+        /* Sidebar & Chat Controls */
+        .sidebar-column { flex: 1; min-width: 300px; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+        .log-box { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px; flex-grow: 1; display: flex; flex-direction: column; max-height: 650px; }
+        .status-msg { padding: 10px; margin-bottom: 10px; background: rgba(59, 130, 246, 0.08); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 0.85rem; font-weight: 600; text-align: center; }
+        .notation-history { height: 85px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); display: grid; grid-template-columns: 32px 1fr 1fr; gap: 4px; align-content: start; background: #050507; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-subtle); }
 
-        .chat-display { flex-grow: 1; background: #000; border-radius: 8px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); margin-bottom: 10px; min-height: 200px; }
-        .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
-        .chat-msg.you { align-self: flex-end; background: var(--chat-you); color: #fff; border-bottom-right-radius: 3px; }
-        .chat-msg.opp { align-self: flex-start; background: var(--chat-opp); color: var(--text-main); border-bottom-left-radius: 3px; border: 1px solid var(--border); }
-        .chat-msg.sys { align-self: center; background: transparent; color: var(--text-muted); font-size: 0.8rem; font-style: italic; text-align: center; }
+        .chat-display { flex-grow: 1; background: #050507; border-radius: 8px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-subtle); margin-bottom: 10px; min-height: 180px; }
+        .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; line-height: 1.4; word-wrap: break-word; }
+        .chat-msg.you { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 2px; }
+        .chat-msg.opp { align-self: flex-start; background: #1c1c27; color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid var(--border-subtle); }
+        .chat-msg.sys { align-self: center; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-style: italic; text-align: center; }
 
-        .chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; max-height: 75px; overflow-y: auto; padding-right: 5px; }
-        .chat-chip { background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); font-size: 0.8rem; padding: 6px 10px; border-radius: 20px; cursor: pointer; transition: 0.15s; font-family: 'Inter'; }
-        .chat-chip:hover { background: #333; border-color: var(--accent); }
+        .chat-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; max-height: 65px; overflow-y: auto; }
+        .chat-chip { background: var(--bg-surface); border: 1px solid var(--border-subtle); color: var(--text-main); font-size: 0.75rem; padding: 5px 9px; border-radius: 15px; cursor: pointer; transition: 0.15s; font-family: 'Plus Jakarta Sans'; }
+        .chat-chip:hover { background: #22222d; border-color: var(--accent); }
 
-        .custom-chat-row { display: flex; gap: 8px; }
-        .custom-chat-input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px 12px; border-radius: 8px; font-family: 'Inter'; font-size: 0.9rem; outline: none; }
+        .custom-chat-row { display: flex; gap: 6px; }
+        .custom-chat-input { flex: 1; background: #050507; border: 1px solid var(--border-subtle); color: #fff; padding: 9px 12px; border-radius: 8px; font-family: 'Plus Jakarta Sans'; font-size: 0.85rem; outline: none; }
         .custom-chat-input:focus { border-color: var(--accent); }
-        .custom-chat-btn { background: var(--accent); border: none; color: white; padding: 0 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .custom-chat-btn { background: var(--accent); border: none; color: white; padding: 0 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
         .custom-chat-btn:hover { background: var(--accent-hover); }
-        .action-row { display: flex; gap: 10px; margin-top: 10px; }
-        .action-row button { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
+        .action-row { display: flex; gap: 8px; margin-top: 8px; }
+        .action-row button { flex: 1; padding: 9px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
     </style>
 </head>
 <body class="theme-default">
 
-    <!-- BAN LOCK OVERLAY -->
-    <div id="ban-screen">
-        <div style="font-size: 4rem; margin-bottom: 20px;">🚫</div>
-        <h1 style="color: var(--danger); font-size: 2.5rem; margin-bottom: 10px;">Access Revoked</h1>
-        <p style="color: var(--text-muted); max-width: 450px; font-size: 1.1rem; line-height: 1.5;">
-            Your account has been permanently suspended by the server administrator for violating game rules.
-        </p>
+    <!-- GLOBAL SERVER ANNOUNCEMENT MODAL -->
+    <div id="announcement-overlay" class="modal-overlay" style="z-index: 10001;">
+        <div class="settings-box" style="border-color: var(--gold); box-shadow: 0 0 30px rgba(245, 158, 11, 0.2); text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📢</div>
+            <h2 style="color: var(--gold); margin-bottom: 15px;">SERVER ANNOUNCEMENT</h2>
+            <p id="announcement-text" style="font-size: 1.1rem; margin-bottom: 25px; line-height: 1.5;"></p>
+            <button class="btn btn-primary" style="width: 100%; background: var(--gold); color: #000; font-weight: bold;" onclick="closeAnnouncement()">Acknowledge</button>
+        </div>
     </div>
 
-    <!-- SPLASH SCREEN -->
+    <!-- BAN LOCK OVERLAY -->
+    <div id="ban-screen">
+        <div style="font-size: 4rem; margin-bottom: 15px;">🛡️</div>
+        <h1 style="color: var(--danger); font-size: 2.2rem; margin-bottom: 8px;">Access Suspended</h1>
+        <p style="color: var(--text-muted); max-width: 420px; font-size: 1rem; line-height: 1.5; margin-bottom: 20px;">
+            Your account has been restricted by server administration.
+        </p>
+        <div id="ban-time-left" style="background: rgba(239, 68, 68, 0.08); border: 1px solid var(--danger); color: #f87171; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 1.05rem; display: none;"></div>
+    </div>
+
+    <!-- =========================================
+         NEW: CINEMATIC SPLASH SCREEN
+    ========================================= -->
     <div id="splash-screen">
-        <div class="splash-title">♟️ AKSHAT'S CHESS</div>
-        <div class="splash-subtitle">LOADING...</div>
+        <div class="splash-glow-orb"></div>
+        <div class="splash-icon-wrapper">
+            <div class="splash-ring"></div>
+            <div class="splash-ring-inner"></div>
+            <div class="splash-icon">♟️</div>
+        </div>
+        <div class="splash-title">AKSHAT CHESS</div>
+        <div class="splash-tagline">ONLINE MULTIPLAYER ARENA</div>
+        <div class="splash-bar-container">
+            <div class="splash-bar-fill" id="splash-bar"></div>
+        </div>
+        <div class="splash-status" id="splash-status">INITIALIZING GAME ENGINE...</div>
     </div>
 
     <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen">
         <div class="logo">👋 Welcome!</div>
-        <div class="subtitle">Create a username to join the multiplayer server.</div>
-        <div class="menu-container">
-            <input type="text" id="username-input" class="login-input" placeholder="Enter Username..." maxlength="12">
-            <button class="btn btn-primary" onclick="saveUsername()">Save & Continue</button>
+        <div class="subtitle">Create an account to join the multiplayer server.</div>
+        <div class="menu-container" style="background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-subtle);">
+            <input type="text" id="username-input" class="login-input" placeholder="Enter Username" maxlength="12">
+            <input type="password" id="password-input" class="login-input" placeholder="Create Password" maxlength="20">
+            <button class="btn btn-primary" onclick="saveUsername()" style="margin-top: 6px; width: 100%;">Save & Continue</button>
         </div>
     </div>
 
     <!-- MAIN MENU -->
     <div id="screen-home" class="screen">
-        <!-- SECRET ADMIN TAP: Tap this logo 5 times to open the admin panel -->
+        <!-- SECRET ADMIN TAP: Tap logo 5 times quickly -->
         <div class="logo" onclick="handleLogoTap()">♟️ Akshat's Chess</div>
         <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
             <button class="btn btn-primary" onclick="openLobby()">🌐 Play Online</button>
             <button class="btn" onclick="nav('screen-solo')">🤖 Practice vs Computer</button>
-            <button class="btn" onclick="startLocalMatch()">👥 Pass & Play</button>
+            <button class="btn" onclick="startLocalMatch()">👥 Local Pass & Play</button>
             
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn" onclick="openSettings()" style="flex: 1; background: transparent; padding: 12px 0;">⚙️ Settings</button>
-                <button class="btn" onclick="window.open('https://notpvpgod.github.io/', '_blank')" style="flex: 1; background: rgba(59, 130, 246, 0.1); border-color: var(--accent); color: var(--accent); padding: 12px 0;">👨‍💻 About Developer</button>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button class="btn btn-secondary" onclick="openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
+                <button class="btn btn-secondary" onclick="alert('Global Leaderboards coming soon!')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 2px;">
+                <button class="btn" onclick="openSettings()" style="flex: 1; background: transparent; padding: 12px 0; font-size: 0.85rem;">⚙️ Game Settings</button>
+                <button class="btn" onclick="window.open('https://notpvpgod.github.io/', '_blank')" style="flex: 1; background: transparent; padding: 12px 0; font-size: 0.85rem;">👨‍💻 About Developer</button>
             </div>
         </div>
     </div>
 
+    <!-- HOW TO PLAY MODAL -->
+    <div id="howto-modal" class="modal-overlay">
+        <div class="settings-box" style="max-width: 460px;">
+            <h2 style="margin-bottom: 12px; font-size: 1.25rem;">📖 How To Play</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">
+                Welcome to Akshat's custom Chess Engine!
+            </p>
+            <ul style="color: var(--text-main); font-size: 0.85rem; margin-left: 18px; margin-bottom: 18px; line-height: 1.7;">
+                <li><strong>Moving:</strong> Tap a piece to see legal moves, then tap the destination. Or drag and drop!</li>
+                <li><strong>Online Play:</strong> Create a room to get an invite link. Send the link to a friend to connect instantly anywhere in the world.</li>
+                <li><strong>Voice Announcer:</strong> Keep sound ON to hear the AI announce Checks and Checkmates out loud.</li>
+                <li><strong>Custom Chat:</strong> Use the quick-chat chips or type your own messages. The chat plays a pop sound so you never miss a message!</li>
+            </ul>
+            <button class="btn btn-primary" style="width: 100%;" onclick="closeHowToPlay()">Understood!</button>
+        </div>
+    </div>
+
     <!-- SETTINGS MODAL -->
-    <div id="settings-modal">
+    <div id="settings-modal" class="modal-overlay">
         <div class="settings-box">
-            <h2 style="margin-bottom: 20px;">Settings</h2>
+            <h2 style="margin-bottom: 18px; font-size: 1.25rem;">⚙️ Game Settings</h2>
             <div class="setting-row">
-                <label style="font-weight: 600;">Board Theme</label>
+                <label style="font-weight: 500; font-size: 0.9rem;">Board Theme</label>
                 <select id="theme-select" onchange="changeTheme()">
                     <option value="theme-default">Classic Minimal</option>
                     <option value="theme-wood">Walnut Wood</option>
@@ -232,77 +362,79 @@
                 </select>
             </div>
             <div class="setting-row">
-                <label style="font-weight: 600;">Sound & Voice</label>
+                <label style="font-weight: 500; font-size: 0.9rem;">Sound & Voice</label>
                 <select id="sound-select">
-                    <option value="on">Sound ON 🔊</option>
-                    <option value="off">Sound OFF 🔇</option>
+                    <option value="on">Enabled 🔊</option>
+                    <option value="off">Muted 🔇</option>
                 </select>
             </div>
             <div class="setting-row">
-                <label style="font-weight: 600;">Change Name</label>
-                <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="changeName()">Edit Profile</button>
+                <label style="font-weight: 500; font-size: 0.9rem;">Change Name</label>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="changeName()">Edit Profile</button>
             </div>
-            <!-- ADMIN BUTTON REMOVED FROM HERE! -->
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
         </div>
     </div>
 
-    <!-- LIVE ADMIN DASHBOARD MODAL -->
-    <div id="admin-modal">
+    <!-- ADMIN DASHBOARD MODAL -->
+    <div id="admin-modal" class="modal-overlay">
         <div class="admin-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="font-size: 1.4rem;">🛡️ Server Admin & Live Player Tracker</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h2 style="font-size: 1.2rem; color: #f87171;">🛡️ Server Admin Panel</h2>
                 <button class="btn-small" onclick="closeAdmin()">✕ Close</button>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
-                <span>Active Players: <strong id="admin-player-count" style="color: var(--accent);">0</strong></span>
-                <span>Auto-refreshes in real-time</span>
+            <div class="admin-toolbar">
+                <button class="btn-small btn-secondary" onclick="adminUnbanId()">🔓 Unban Specific ID</button>
+                <button class="btn-small btn-secondary" onclick="adminUnbanAll()" style="color: var(--success); border-color: rgba(16,185,129,0.3);">🌍 Global Unban</button>
+                <button class="btn-small" style="background: var(--gold); color: #000; border-color: var(--gold);" onclick="adminAnnounce()">📢 Global Announcement</button>
+                <button class="btn-small" onclick="adminChangePassword()" style="margin-left: auto;">🔑 Change Password</button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-muted);">
+                <span>Players Online Now: <strong id="admin-player-count" style="color: var(--success);">0</strong></span>
+                <span>Total Unique Players Seen: <strong id="admin-total-seen" style="color: var(--accent);">0</strong></span>
             </div>
 
-            <div id="admin-player-list" style="overflow-y: auto; flex-grow: 1; min-height: 250px; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
-                <!-- Live active player entries appear here -->
-            </div>
+            <div id="admin-player-list" style="overflow-y: auto; flex-grow: 1; min-height: 260px; background: #050507; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;"></div>
         </div>
     </div>
 
     <!-- OPPONENT SELECT -->
     <div id="screen-solo" class="screen">
-        <h2 style="margin-bottom: 8px; font-weight: 800; font-size: 2.2rem;">Select Opponent</h2>
-        <p style="color: var(--text-muted); margin-bottom: 24px;">Train against the world's best engines.</p>
+        <h2 style="margin-bottom: 6px; font-size: 2rem;">Select Opponent</h2>
+        <p style="color: var(--text-muted); margin-bottom: 22px; font-size: 0.95rem;">Train against the world's best engines.</p>
         <div class="roster-grid" id="roster"></div>
-        <button class="btn" style="margin-top: 30px; width: 220px;" onclick="nav('screen-home')">⬅ Back to Menu</button>
+        <button class="btn" style="margin-top: 25px; width: 200px;" onclick="returnToHome()">⬅ Back to Menu</button>
     </div>
 
     <!-- ONLINE LOBBY SYSTEM -->
     <div id="screen-lobby" class="screen">
-        <h2 style="margin-bottom: 20px; font-size: 2.2rem;">Multiplayer Lobby</h2>
+        <h2 style="margin-bottom: 18px; font-size: 2rem;">Multiplayer Lobby</h2>
         
-        <div id="lobby-ui" style="width: 100%; max-width: 450px;">
-            <button class="btn btn-primary" style="width: 100%; margin-bottom: 25px; font-size: 1.1rem; padding: 18px;" onclick="hostMatch()">➕ Host a Match</button>
+        <div id="lobby-ui" style="width: 100%; max-width: 420px;">
+            <button class="btn btn-primary" style="width: 100%; margin-bottom: 20px; padding: 16px;" onclick="hostMatch()">➕ Create a Room</button>
             
-            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Available Rooms</h3>
-            <div id="room-list" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 15px; min-height: 180px;">
-                <!-- Room listings will appear here -->
-            </div>
+            <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;">Available Rooms</h3>
+            <div id="room-list" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; min-height: 160px;"></div>
             
-            <button class="btn" style="width: 100%; margin-top: 25px;" onclick="cancelSearch()">⬅ Back to Menu</button>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="returnToHome()">⬅ Back to Menu</button>
         </div>
 
-        <div id="host-ui" style="display: none; max-width: 450px;" class="loader-container">
+        <div id="host-ui" style="display: none; max-width: 420px;" class="loader-container">
             <div class="spinner"></div>
-            <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Hosting Match</h3>
-            <p id="host-msg" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Waiting for a player to join...</p>
+            <h3 style="margin-bottom: 8px; font-size: 1.35rem;">Hosting Match</h3>
+            <p id="host-msg" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;">Waiting for a player to join...</p>
             
-            <div style="background: #000; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 25px; text-align: left;">
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;">INVITE A FRIEND DIRECTLY:</div>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="invite-link" readonly style="flex: 1; background: transparent; border: none; color: var(--accent); font-size: 0.75rem; outline: none; font-family: monospace;">
-                    <button onclick="copyInvite()" style="background: var(--surface-hover); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">COPY</button>
+            <div style="background: #050507; padding: 10px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 20px; text-align: left;">
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 700;">INVITE A FRIEND DIRECTLY:</div>
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="invite-link" readonly style="flex: 1; background: transparent; border: none; color: var(--accent); font-size: 0.7rem; outline: none; font-family: monospace;">
+                    <button onclick="copyInvite()" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); color: #fff; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700;">COPY</button>
                 </div>
             </div>
 
-            <button class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="cancelSearch()">Cancel Match</button>
+            <button class="btn" style="width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" onclick="returnToHome()">Cancel Match</button>
         </div>
     </div>
 
@@ -312,7 +444,7 @@
             <div class="board-column">
                 <div class="player-tag">
                     <div class="pt-info">
-                        <span id="opp-avatar" style="font-size: 1.5rem;">👤</span>
+                        <span id="opp-avatar" style="font-size: 1.3rem;">👤</span>
                         <div>
                             <div class="pt-name" id="opp-name">Opponent</div>
                             <div class="pt-captures" id="opp-cap"></div>
@@ -328,7 +460,7 @@
 
                 <div class="player-tag">
                     <div class="pt-info">
-                        <span id="plr-avatar" style="font-size: 1.5rem;">👤</span>
+                        <span id="plr-avatar" style="font-size: 1.3rem;">👤</span>
                         <div>
                             <div class="pt-name" id="plr-name">You</div>
                             <div class="pt-captures" id="plr-cap"></div>
@@ -344,7 +476,7 @@
                     <div class="notation-history" id="notation"></div>
 
                     <div class="chat-display" id="chat-display">
-                        <div class="chat-msg sys">Chat started. Be friendly!</div>
+                        <div class="chat-msg sys">Chat system active. Be friendly!</div>
                     </div>
 
                     <div class="chat-chips">
@@ -353,21 +485,17 @@
                         <button class="chat-chip" onclick="sendChat('Oops!')">😅 Oops</button>
                         <button class="chat-chip" onclick="sendChat('🔥')">🔥</button>
                         <button class="chat-chip" onclick="sendChat('🤯')">🤯</button>
-                        <button class="chat-chip" onclick="sendChat('💀')">💀</button>
-                        <button class="chat-chip" onclick="sendChat('🥶')">🥶</button>
-                        <button class="chat-chip" onclick="sendChat('🧠')">🧠</button>
-                        <button class="chat-chip" onclick="sendChat('😭')">😭</button>
-                        <button class="chat-chip" onclick="sendChat('Good game!')">🤝 GG</button>
+                        <button class="chat-chip" onclick="sendChat('GG')">🤝 GG</button>
                     </div>
 
                     <div class="custom-chat-row">
-                        <input type="text" id="chat-input" class="custom-chat-input" placeholder="Type message..." maxlength="60">
+                        <input type="text" id="chat-input" class="custom-chat-input" placeholder="Type a message..." maxlength="60">
                         <button class="custom-chat-btn" onclick="sendCustomChat()">Send</button>
                     </div>
 
                     <div class="action-row">
-                        <button class="btn" id="btn-hint" onclick="reqHint()" style="border-color: var(--accent); color: var(--accent);">💡 Hint</button>
-                        <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.4); color: var(--danger);">🏳️ Resign</button>
+                        <button class="btn btn-secondary" id="btn-hint" onclick="reqHint()">💡 Hint</button>
+                        <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.3); color: #f87171;">🏳️ Resign</button>
                     </div>
                 </div>
             </div>
@@ -381,48 +509,94 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script>
-        // --- ADMIN CONFIGURATION ---
-        // Change this password to whatever you want. Keep it secret!
-        const ADMIN_PASS = "admin777"; 
+        /* =========================================
+           ADMIN CONFIGURATION (Passkey: notpvpgod9090)
+        ========================================= */
+        let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
 
-        // --- Core Setup & State ---
+        /* =========================================
+           CORE STATE SYSTEM
+        ========================================= */
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
-        let hostTimer = null, presenceTimer = null, mState = 'idle', aTop = null;
+        let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
         let playerName = localStorage.getItem('akshat_chess_user') || "";
+        let playerPass = localStorage.getItem('akshat_chess_userpass') || "";
         let playerRank = localStorage.getItem('akshat_chess_rank') || "";
         let oppName = "Opponent", oppRank = "";
+        
         let livePlayers = {};
+        let allTimeSessionPlayers = new Set(); 
+        let currentActivity = "Main Menu";
 
-        // Verify Ban status immediately
-        if (localStorage.getItem('akshat_chess_banned') === 'true') {
-            document.getElementById('ban-screen').style.display = 'flex';
+        /* =========================================
+           BAN ENFORCEMENT PROTOCOL
+        ========================================= */
+        function checkBanStatus() {
+            let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
+            let banUntil = localStorage.getItem('akshat_chess_ban_until');
+
+            if (isBanned) {
+                if (banUntil && Date.now() > parseInt(banUntil)) {
+                    localStorage.removeItem('akshat_chess_banned');
+                    localStorage.removeItem('akshat_chess_ban_until');
+                    document.getElementById('ban-screen').style.display = 'none';
+                    return false;
+                } else {
+                    document.getElementById('ban-screen').style.display = 'flex';
+                    if (banUntil) {
+                        let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
+                        document.getElementById('ban-time-left').style.display = 'block';
+                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minutes.`;
+                    } else {
+                        document.getElementById('ban-time-left').style.display = 'none';
+                    }
+                    return true;
+                }
+            }
+            return false;
         }
 
+        checkBanStatus();
+        banCheckTimer = setInterval(checkBanStatus, 15000); 
+
+        /* =========================================
+           BOOT & LOGIN LOGIC
+        ========================================= */
         window.addEventListener('load', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const joinId = urlParams.get('join');
 
             initNet();
 
+            // Smooth animated loader bar on splash screen
             setTimeout(() => {
-                document.getElementById('splash-screen').style.opacity = '0';
-                setTimeout(() => { 
-                    document.getElementById('splash-screen').style.display = 'none'; 
-                    
-                    if(playerName === "") {
-                        document.getElementById('screen-login').classList.add('active');
-                    } else {
-                        updateWelcomeTag();
-                        if(joinId) {
-                            openLobby();
-                            setTimeout(() => joinRoom(joinId), 1000);
+                const bar = document.getElementById('splash-bar');
+                const status = document.getElementById('splash-status');
+                if (bar) bar.style.width = '100%';
+                if (status) status.innerText = 'ONLINE SYSTEMS READY';
+
+                setTimeout(() => {
+                    document.getElementById('splash-screen').style.opacity = '0';
+                    setTimeout(() => { 
+                        document.getElementById('splash-screen').style.display = 'none'; 
+                        
+                        if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+
+                        if(playerName === "" || playerPass === "") {
+                            document.getElementById('screen-login').classList.add('active');
                         } else {
-                            document.getElementById('screen-home').classList.add('active');
+                            updateWelcomeTag();
+                            if(joinId) {
+                                openLobby();
+                                setTimeout(() => joinRoom(joinId), 1000);
+                            } else {
+                                document.getElementById('screen-home').classList.add('active');
+                            }
                         }
-                    }
-                }, 800);
-            }, 1500);
+                    }, 800);
+                }, 1100);
+            }, 300);
         });
 
         function getBadgeHTML(rank) {
@@ -436,32 +610,50 @@
 
         function updateWelcomeTag() {
             let badge = getBadgeHTML(playerRank);
-            document.getElementById('welcome-text').innerHTML = `Welcome back, <strong>${playerName}</strong> ${badge}!`;
+            document.getElementById('welcome-text').innerHTML = `Connected as <strong>${playerName}</strong> ${badge}`;
         }
 
         function saveUsername() {
-            let input = document.getElementById('username-input').value.trim();
-            if(input.length >= 3) {
-                playerName = input;
+            let uInput = document.getElementById('username-input').value.trim();
+            let pInput = document.getElementById('password-input').value.trim();
+            
+            if(uInput.length >= 3 && pInput.length >= 4) {
+                playerName = uInput;
+                playerPass = pInput;
                 localStorage.setItem('akshat_chess_user', playerName);
+                localStorage.setItem('akshat_chess_userpass', playerPass);
+                
                 updateWelcomeTag();
                 nav('screen-home');
+                
+                if (audioCtx.state === 'suspended') audioCtx.resume();
             } else {
-                alert("Username must be at least 3 characters!");
+                alert("Validation error: Username must be 3+ characters and Password 4+ characters.");
             }
         }
 
         function changeName() {
             closeSettings();
             document.getElementById('username-input').value = playerName;
+            document.getElementById('password-input').value = playerPass;
             nav('screen-login');
         }
 
+        /* =========================================
+           MODAL TOGGLES
+        ========================================= */
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
         function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
+        
+        function openHowToPlay() { document.getElementById('howto-modal').style.display = 'flex'; }
+        function closeHowToPlay() { document.getElementById('howto-modal').style.display = 'none'; }
+        
+        function closeAnnouncement() { document.getElementById('announcement-overlay').style.display = 'none'; }
 
-        // --- SECRET ADMIN TAP LOGIC ---
+        /* =========================================
+           SECRET ADMIN TAP PROTOCOL (5 Taps)
+        ========================================= */
         let adminTaps = 0;
         let adminTimeout;
         
@@ -473,17 +665,16 @@
                 adminTaps = 0;
                 promptAdmin();
             } else {
-                // If they stop tapping for 1 second, reset the counter
                 adminTimeout = setTimeout(() => { adminTaps = 0; }, 1000);
             }
         }
 
         function promptAdmin() {
-            let entered = prompt("Enter Administrator Secret Key:");
+            let entered = prompt("Enter Master Admin Passkey:");
             if (entered === ADMIN_PASS) {
                 openAdmin();
             } else if (entered !== null) {
-                alert("Access Denied: Incorrect Password.");
+                alert("Access Denied.");
             }
         }
 
@@ -494,23 +685,42 @@
 
         function closeAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
 
-        // PC Shortcut as a backup: Ctrl + Shift + A 
         window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
-                promptAdmin();
-            }
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') { promptAdmin(); }
         });
 
-        // --- Presence Heartbeat System ---
-        function sendPresence() {
-            if (mq && mq.connected) {
-                mq.publish('nx_presence_v1', JSON.stringify({
-                    id: mId,
-                    name: playerName || "Anonymous",
-                    rank: playerRank,
-                    state: mState,
-                    time: Date.now()
-                }));
+        /* =========================================
+           ADMIN PANEL COMMANDS & CONTROLS
+        ========================================= */
+        function adminChangePassword() {
+            let newPass = prompt("Enter new Admin Passkey:");
+            if (newPass && newPass.trim() !== "") {
+                ADMIN_PASS = newPass.trim();
+                localStorage.setItem('akshat_admin_pass', ADMIN_PASS);
+                alert("Admin passkey successfully updated.");
+            }
+        }
+
+        function adminUnbanId() {
+            let targetId = prompt("Enter Player ID to unban:");
+            if (targetId && targetId.trim() !== "") {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: targetId.trim(), key: ADMIN_PASS }));
+                alert("Unban transmission sent for ID: " + targetId);
+            }
+        }
+
+        function adminUnbanAll() {
+            if(confirm("Lift all network bans globally?")) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: 'ALL', key: ADMIN_PASS }));
+                alert("Global unban sequence broadcasted.");
+            }
+        }
+
+        function adminAnnounce() {
+            let msg = prompt("Enter your message to broadcast to all online players:");
+            if (msg && msg.trim() !== "") {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'announce', text: msg.trim(), key: ADMIN_PASS }));
+                alert("Announcement broadcasted globally!");
             }
         }
 
@@ -521,7 +731,7 @@
             let count = 0;
 
             for (let id in livePlayers) {
-                if (now - livePlayers[id].time < 10000) {
+                if (now - livePlayers[id].time < 12000) {
                     count++;
                     const p = livePlayers[id];
                     const isSelf = (id === mId) ? " (You)" : "";
@@ -529,11 +739,12 @@
                         <div class="player-row">
                             <div class="info">
                                 <div><strong>${p.name}</strong>${isSelf} ${getBadgeHTML(p.rank)}</div>
-                                <div style="font-size: 0.75rem; color: #888;">ID: ${id} | Screen: <span style="color: var(--accent);">${p.state}</span></div>
+                                <div style="font-size: 0.75rem; color: #9ca3af;">State: <strong style="color: var(--gold);">${p.activity}</strong></div>
+                                <div style="font-size: 0.65rem; color: #4b5563;">ID: ${id}</div>
                             </div>
                             <div class="actions">
                                 <button class="btn-small" onclick="adminSetRank('${id}')">⭐ Rank</button>
-                                <button class="btn-small btn-danger" onclick="adminBan('${id}')">🔨 Ban</button>
+                                <button class="btn-small btn-danger" onclick="adminBanOptions('${id}', '${p.name}')">🔨 Ban</button>
                             </div>
                         </div>
                     `;
@@ -541,36 +752,73 @@
             }
 
             document.getElementById('admin-player-count').innerText = count;
-            list.innerHTML = count === 0 ? '<div style="text-align:center; color:#666; padding: 20px;">Scanning for active players...</div>' : html;
+            document.getElementById('admin-total-seen').innerText = allTimeSessionPlayers.size;
+            list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">Scanning for active players...</div>' : html;
         }
 
-        function adminBan(targetId) {
-            if (targetId === mId) { alert("You cannot ban yourself!"); return; }
-            if (confirm("Are you sure you want to permanently ban this player?")) {
-                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'ban', target: targetId, key: ADMIN_PASS }));
+        function adminBanOptions(targetId, targetName) {
+            if (targetId === mId) { alert("Action blocked: Cannot target self."); return; }
+            let choice = prompt(`Ban Protocol for ${targetName}:\n\n[1] Permanent Ban\n[2] 10-Minute Ban\n[3] 1-Hour Ban`);
+            let mins = -1;
+            if (choice === '1') mins = 0;
+            else if (choice === '2') mins = 10;
+            else if (choice === '3') mins = 60;
+            
+            if (mins !== -1) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'ban', target: targetId, duration: mins, key: ADMIN_PASS }));
                 delete livePlayers[targetId];
                 renderAdminDashboard();
+                alert(`Player banned.`);
             }
         }
 
         function adminSetRank(targetId) {
-            let rank = prompt("Enter Rank for player (e.g. VIP, MOD, DEV, MASTER):");
-            if (rank) {
+            let rank = prompt("Designate Rank (DEV, VIP, MOD, MASTER):");
+            if (rank !== null) {
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'rank', target: targetId, rank: rank.toUpperCase(), key: ADMIN_PASS }));
                 if (livePlayers[targetId]) livePlayers[targetId].rank = rank.toUpperCase();
                 renderAdminDashboard();
             }
         }
 
-        // --- Audio & Voice Announcer System ---
+        /* =========================================
+           AUDIO & CHAT NOTIFICATION ENGINE
+        ========================================= */
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSfx(t) {
             if(document.getElementById('sound-select').value === 'off') return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const o = audioCtx.createOscillator(), g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
-            if (t === 'm') { o.frequency.setValueAtTime(320, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08); g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); o.start(); o.stop(audioCtx.currentTime + 0.08); }
-            if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
+            
+            if (t === 'm') { 
+                o.frequency.setValueAtTime(320, audioCtx.currentTime); 
+                o.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08); 
+                g.gain.setValueAtTime(0.25, audioCtx.currentTime); 
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
+                o.start(); o.stop(audioCtx.currentTime + 0.08); 
+            }
+            if (t === 'c') { 
+                o.type = 'triangle'; 
+                o.frequency.setValueAtTime(250, audioCtx.currentTime); 
+                o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); 
+                g.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); 
+                o.start(); o.stop(audioCtx.currentTime + 0.12); 
+            }
+        }
+
+        function playMsgSfx() {
+            if(document.getElementById('sound-select').value === 'off') return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = 'sine'; 
+            o.frequency.setValueAtTime(580, audioCtx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.07);
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.07);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + 0.07);
         }
 
         function speak(text) {
@@ -580,15 +828,17 @@
             window.speechSynthesis.speak(msg);
         }
 
-        // --- Bot Profiles ---
+        /* =========================================
+           AI BOT PROFILES
+        ========================================= */
         const ROSTER = [
-            { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "I'm just clicking buttons!"] },
-            { id: 'b2', name: 'Jimmy', avatar: '📗', rating: '900', lvl: 3, tm: 200, quotes: ["Control the center!", "Don't forget to develop your pieces.", "Always castle early."] },
-            { id: 'b3', name: 'Nelson', avatar: '⚡', rating: '1450', lvl: 7, tm: 350, quotes: ["Watch out for my Queen! 👑", "I play fast and aggressive.", "Did you see that attack?"] },
-            { id: 'b4', name: 'Praggnanandhaa', avatar: '🇮🇳', rating: '2765', lvl: 15, tm: 450, quotes: ["Tactics flow where pieces are active.", "I saw this combination 5 moves ago.", "Interesting line..."] },
-            { id: 'b5', name: 'Gukesh D', avatar: '🎯', rating: '2795', lvl: 18, tm: 550, quotes: ["I calculate every single defense.", "Precision is key here.", "Your position is slightly worse now."] },
-            { id: 'b6', name: 'Hikaru N.', avatar: '🚀', rating: '2875', lvl: 20, tm: 350, quotes: ["Takes, takes, takes... you're lost. 😂", "Chat, is this a blunder? 💀", "I'm just too fast bro. ⚡", "Juicer!"] },
-            { id: 'b7', name: 'Magnus C.', avatar: '👑', rating: '2882', lvl: 20, tm: 600, quotes: ["I'm grinding you down into the endgame.", "Too slow.", "Is that all you have? 🥱", "I guess I win."] }
+            { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "Clicking random squares!"] },
+            { id: 'b2', name: 'Jimmy', avatar: '📗', rating: '900', lvl: 3, tm: 200, quotes: ["Control the central squares!", "Develop minor pieces quickly.", "Castle early for safety."] },
+            { id: 'b3', name: 'Nelson', avatar: '⚡', rating: '1450', lvl: 7, tm: 350, quotes: ["Watch my Queen pressure! 👑", "Aggressive initiative is key.", "Did you calculate that line?"] },
+            { id: 'b4', name: 'Praggnanandhaa', avatar: '🇮🇳', rating: '2765', lvl: 15, tm: 450, quotes: ["Tactics flow from active placements.", "Calculated 5 moves deep.", "Interesting positional nuance."] },
+            { id: 'b5', name: 'Gukesh D', avatar: '🎯', rating: '2795', lvl: 18, tm: 550, quotes: ["Precise calculation required here.", "Your position is slipping.", "Holding tight defensive grids."] },
+            { id: 'b6', name: 'Hikaru N.', avatar: '🚀', rating: '2875', lvl: 20, tm: 350, quotes: ["Takes, takes, takes... you're busted. 😂", "Absolute juicer position! ⚡", "Too fast for calculations."] },
+            { id: 'b7', name: 'Magnus C.', avatar: '👑', rating: '2882', lvl: 20, tm: 600, quotes: ["Grinding down your endgame structure.", "Too slow.", "Converting small advantages.", "Clean technical conversion."] }
         ];
 
         const rg = document.getElementById('roster');
@@ -600,15 +850,53 @@
             rg.appendChild(c);
         });
 
+        /* =========================================
+           ROUTER & NAVIGATION
+        ========================================= */
         function nav(id) { 
+            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             $('.screen').removeClass('active'); 
             $('#' + id).addClass('active'); 
-            mState = id.replace('screen-', '');
+            
+            if(id === 'screen-home') currentActivity = "Main Menu";
+            if(id === 'screen-solo') currentActivity = "Selecting AI Opponent";
+            
             sendPresence();
             if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
         }
 
-        // --- Stockfish AI ---
+        // FIXED ROBUST RETURN PROTOCOL
+        function returnToHome() {
+            currentActivity = "Main Menu";
+            clearInterval(hostTimer);
+            if(mq) {
+                try { mq.unsubscribe('nx_lobby_v3'); } catch(e){}
+                if(aTop) { try { mq.unsubscribe(aTop); } catch(e){} }
+            }
+            try {
+                let currentUrl = window.location.href;
+                if (currentUrl.includes('?join=')) {
+                    let cleanUrl = currentUrl.split('?')[0];
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+            } catch (err) {
+                console.log("Local browser history cleanup bypassed.");
+            }
+            nav('screen-home');
+        }
+
+        function sendPresence() {
+            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+            if (mq && mq.connected) {
+                mq.publish('nx_presence_v1', JSON.stringify({
+                    id: mId, name: playerName || "Anonymous", rank: playerRank, activity: currentActivity, time: Date.now()
+                }));
+            }
+        }
+
+        /* =========================================
+           STOCKFISH AI WORKER
+        ========================================= */
         let eng = null, thinking = false, hintReq = false;
         fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
             eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
@@ -625,29 +913,35 @@
         });
 
         function askEng(lvl, tm) { if(gm.game_over()) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
-        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating best move...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
-        function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Hint provided on board.'); } }
+        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating optimal path...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
+        function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Suggested vector displayed.'); } }
 
-        // --- Board Logic ---
+        /* =========================================
+           CHESS LOGIC & INTERACTION ENGINE
+        ========================================= */
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
         let selectedSq = null; 
 
         function initCPU(b) { 
             gMode = 'cpu'; aBot = b; 
             oppName = b.name; oppRank = "";
+            currentActivity = "AI Match vs " + b.name;
+            
             $('#opp-avatar').text(b.avatar); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
             startBrd('white'); setLog(`Match started vs ${oppName}`);
-            setTimeout(() => { appendChat(b.quotes[0] || "Hello human!", 'opp'); }, 1000);
+            setTimeout(() => { appendChat(b.quotes[0] || "Greetings.", 'opp'); }, 1000);
         }
         
         function startLocalMatch() { 
             gMode = 'local'; 
             oppName = "Player 2"; oppRank = "";
+            currentActivity = "Local Pass & Play Match";
+            
             $('#opp-avatar').text('👥'); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
-            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match</div>';
+            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match Started</div>';
             startBrd('white'); setLog('Local Pass & Play started.'); 
         }
 
@@ -669,6 +963,7 @@
             $('#plr-name').html(playerName + ' ' + getBadgeHTML(playerRank));
             drawUI();
             selectedSq = null;
+            sendPresence(); 
             
             brd = Chessboard('board', {
                 draggable: true, position: 'start', orientation: or,
@@ -731,8 +1026,8 @@
             if(gMode !== 'cpu' || Math.random() > 0.4) return;
             setTimeout(() => {
                 let msg = aBot.quotes[Math.floor(Math.random() * aBot.quotes.length)];
-                if(isCheck && Math.random() > 0.5) msg = "Watch your king! ⚠️";
-                if(isCapture && Math.random() > 0.5) msg = "Thanks for the material! 😋";
+                if(isCheck && Math.random() > 0.5) msg = "King under pressure! ⚠️";
+                if(isCapture && Math.random() > 0.5) msg = "Material secured. 🎯";
                 appendChat(msg, 'opp');
             }, 800 + Math.random() * 1000);
         }
@@ -746,7 +1041,7 @@
                 clearInterval(tmr); 
                 if(gm.in_checkmate()) { setLog('🏆 Checkmate. Match Over.'); speak("Checkmate!"); } 
                 else { setLog('🤝 Match Drawn.'); }
-                if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
+                if(gMode === 'cpu') setTimeout(()=> appendChat("GG.", 'opp'), 1000);
             } else { 
                 if(isCheck) { setLog('⚠️ Check!'); speak("Check."); } else { setLog(''); }
                 
@@ -759,17 +1054,16 @@
             if(confirm("Are you sure you want to resign and exit?")) {
                 if(gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
                 clearInterval(tmr); 
-                if(gMode==='net') cancelSearch(); 
-                nav('screen-home'); 
+                returnToHome(); 
             }
         }
 
         window.addEventListener('beforeunload', () => {
-            if (mState === 'match' && gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
+            if (currentActivity.includes("Online Match") && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
         });
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time out. Match Over.');} }
+        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time expired. Session Over.');} }
         function fmt(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
         function drawClk() { $('#plr-clock').text(fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(fmt(myCol==='w'?tB:tW)); }
         
@@ -786,6 +1080,9 @@
         }
         function setLog(t) { if(t) $('#match-status').html(t); }
 
+        /* =========================================
+           CHAT PIPELINE
+        ========================================= */
         function appendChat(text, type) {
             const chatBox = document.getElementById('chat-display');
             const msgDiv = document.createElement('div');
@@ -793,6 +1090,8 @@
             msgDiv.innerText = text;
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
+            
+            if(type !== 'sys') playMsgSfx();
         }
 
         function sendChat(msg) {
@@ -800,7 +1099,7 @@
             if(gMode === 'net' && mq && aTop) {
                 mq.publish(aTop, JSON.stringify({ t: 'chat', msg: msg, s: mId }));
             } else if (gMode === 'cpu') {
-                if(Math.random() > 0.5) setTimeout(() => { appendChat("🤔 I am calculating...", 'opp'); }, 1000);
+                if(Math.random() > 0.5) setTimeout(() => { appendChat("Analyzing position...", 'opp'); }, 1000);
             }
         }
         
@@ -814,37 +1113,62 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // --- Custom Room Networking & Admin Protocols ---
+        /* =========================================
+           MQTT BROKER & MULTIPLAYER PROTOCOL
+        ========================================= */
         function initNet() {
             if(mq) return;
             mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
             
             mq.on('connect', () => {
                 mq.subscribe(`nx_inbox_${mId}`);
-                mq.subscribe('nx_presence_v1');
                 mq.subscribe('nx_admin_cmd');
-
-                clearInterval(presenceTimer);
-                presenceTimer = setInterval(sendPresence, 4000);
-                sendPresence();
+                
+                if(localStorage.getItem('akshat_chess_banned') !== 'true') {
+                    mq.subscribe('nx_presence_v1');
+                    clearInterval(presenceTimer);
+                    presenceTimer = setInterval(sendPresence, 4000);
+                    sendPresence();
+                }
             });
 
             mq.on('message', (top, msg) => {
                 let d = JSON.parse(msg.toString());
                 
-                // 1. PRESENCE TRACKER
                 if (top === 'nx_presence_v1') {
-                    livePlayers[d.id] = { name: d.name, rank: d.rank, state: d.state, time: d.time || Date.now() };
+                    livePlayers[d.id] = { name: d.name, rank: d.rank, activity: d.activity, time: d.time || Date.now() };
+                    allTimeSessionPlayers.add(d.id); 
                     if ($('#admin-modal').is(':visible')) renderAdminDashboard();
                 }
 
-                // 2. ADMIN ENFORCEMENT COMMANDS
+                // 2. ADMIN ENFORCEMENT COMMANDS (Ban, Temp Ban, Unban, Rank, ANNOUNCE)
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
+                    
+                    if (d.cmd === 'announce') {
+                        document.getElementById('announcement-text').innerText = d.text;
+                        document.getElementById('announcement-overlay').style.display = 'flex';
+                        playMsgSfx();
+                    }
+
                     if (d.cmd === 'ban' && d.target === mId) {
                         localStorage.setItem('akshat_chess_banned', 'true');
-                        document.getElementById('ban-screen').style.display = 'flex';
+                        if (d.duration && d.duration > 0) {
+                            let expiryTime = Date.now() + (d.duration * 60000);
+                            localStorage.setItem('akshat_chess_ban_until', expiryTime.toString());
+                        } else {
+                            localStorage.removeItem('akshat_chess_ban_until');
+                        }
                         if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
+                        checkBanStatus();
                     }
+
+                    if (d.cmd === 'unban' && (d.target === mId || d.target === 'ALL')) {
+                        localStorage.removeItem('akshat_chess_banned');
+                        localStorage.removeItem('akshat_chess_ban_until');
+                        alert("An administrator has removed your ban. Reloading system...");
+                        window.location.reload();
+                    }
+
                     if (d.cmd === 'rank' && d.target === mId) {
                         playerRank = d.rank;
                         localStorage.setItem('akshat_chess_rank', playerRank);
@@ -853,55 +1177,54 @@
                     }
                 }
 
-                // 3. LOBBY BROWSING
+                if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+
                 if(top === 'nx_lobby_v3') {
-                    if(d.a === 'host' && d.id !== mId && mState === 'lobby') {
+                    if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
                         $('#room-list').find('.searching-msg').remove();
                         if($(`#rm_${d.id}`).length === 0) {
                             let displayName = d.n ? d.n : "Online Player";
                             let badge = getBadgeHTML(d.r);
                             $('#room-list').append(`
-                                <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--accent);">
+                                <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--border-glow);">
                                     <div class="pt-info">
-                                        <span style="font-size:1.2rem;">🟢</span> 
+                                        <span style="font-size:1rem;">🟢</span> 
                                         <div class="pt-name">${displayName} ${badge}</div>
                                     </div>
-                                    <button class="btn btn-primary" style="padding:8px 16px; font-size:0.9rem;" onclick="joinRoom('${d.id}')">Join</button>
+                                    <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="joinRoom('${d.id}')">Connect</button>
                                 </div>
                             `);
                         }
                     }
-                    if(d.a === 'who' && mState === 'hosting') {
+                    if(d.a === 'who' && currentActivity === "Hosting a Match Room") {
                         mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
                     }
                 }
 
-                // 4. INBOX INVITATIONS & HANDSHAKES
                 if(top === `nx_inbox_${mId}`) {
-                    if(d.a === 'join' && mState === 'hosting') {
+                    if(d.a === 'join' && currentActivity === "Hosting a Match Room") {
                         clearInterval(hostTimer);
-                        mState = 'match';
                         aTop = `nx_rm_${mId}`; 
-                        oppName = d.n ? d.n : "Opponent";
+                        oppName = d.n ? d.n : "Challenger";
                         oppRank = d.r || "";
+                        currentActivity = "Online Match vs " + oppName;
                         mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName, rk:playerRank}));
                         $('#opp-avatar').text('🌐');
                         $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('white'); 
                     }
-                    if(d.a === 'start' && mState === 'joining') {
-                        mState = 'match'; 
+                    if(d.a === 'start' && currentActivity === "Connecting to Room...") {
                         aTop = d.r; 
-                        oppName = d.n ? d.n : "Opponent";
+                        oppName = d.n ? d.n : "Host";
                         oppRank = d.rk || "";
+                        currentActivity = "Online Match vs " + oppName;
                         $('#opp-avatar').text('🌐');
                         $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('black'); 
                     }
                 }
 
-                // 5. IN-MATCH SIGNALS
-                if(top === aTop && mState === 'match') {
+                if(top === aTop && currentActivity.includes("Online Match")) {
                     if(d.t === 'm' && d.s !== mId) applyMv(d.f, d.to, d.p);
                     if(d.t === 'chat' && d.s !== mId) {
                         let safeMsg = document.createTextNode(d.msg).textContent;
@@ -919,9 +1242,10 @@
         }
 
         function openLobby() {
-            nav('screen-lobby'); mState = 'lobby';
+            nav('screen-lobby'); 
+            currentActivity = "Browsing Lobby";
             $('#lobby-ui').show(); $('#host-ui').hide(); 
-            $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#666; margin-top:20px;">Searching for rooms...</div>');
+            $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#6b7280; padding:20px; font-size:0.85rem;">Scanning for active players...</div>');
             
             if(!mq||!mq.connected) initNet();
             setTimeout(() => {
@@ -931,9 +1255,9 @@
         }
 
         function hostMatch() {
-            mState = 'hosting';
+            currentActivity = "Hosting a Match Room";
             $('#lobby-ui').hide(); $('#host-ui').show(); 
-            $('#host-msg').text("Waiting for a player to join your room...");
+            $('#host-msg').text("Waiting for a player to join...");
             $('#room-list').empty(); 
             
             let baseURL = window.location.href.split('?')[0];
@@ -942,27 +1266,26 @@
 
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
             }, 1500);
         }
 
         function copyInvite() {
             let copyText = document.getElementById("invite-link");
             copyText.select();
-            copyText.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(copyText.value);
             alert("Invite link copied! Send it to your friend.");
         }
 
         function joinRoom(hostId) {
             if(!mq || !mq.connected) initNet(); 
-            mState = 'joining'; 
+            currentActivity = "Connecting to Room...";
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Connecting to room...");
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank}));
             }, 1000);
         }
 
@@ -970,15 +1293,7 @@
             mq.subscribe(aTop); gMode = 'net';
             $('#btn-hint').hide();
             document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">🔗 Connected to match!</div>`;
-            startBrd(col); setLog('Match connected.');
-        }
-
-        function cancelSearch() { 
-            mState = 'idle'; 
-            clearInterval(hostTimer); 
-            if(mq) { mq.unsubscribe('nx_lobby_v3'); if(aTop) mq.unsubscribe(aTop); } 
-            window.history.replaceState({}, document.title, window.location.pathname);
-            nav('screen-home'); 
+            startBrd(col); setLog('Match started.');
         }
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
