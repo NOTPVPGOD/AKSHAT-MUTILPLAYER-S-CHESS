@@ -20,14 +20,17 @@
 
 ## 🌟 Overview
 
-**Akshat's Multiplayer Chess Game** delivers a clean, responsive chess experience right in your browser. Whether you want to play a quick match against an opponent across the globe or practice tactical lines against grandmaster-level AI, everything is ready in one click.
+**Akshat's Multiplayer Chess Game** delivers a clean, responsive chess experience right in your browser. Whether you want to play a quick match against an opponent across the globe or practice tactical lines against grandmaster-level engines, everything is ready in one click. 
+
+We built this project to provide a seamless, completely free chess experience without intrusive ads or forced account creations. 
 
 ---
 
 ## ✨ Features
 
 * 🌐 **1-Click Online Matchmaking:** Find and connect with players worldwide instantly—no account creation or room codes needed.
-* 🤖 **Grandmaster AI Roster:** Train against custom bots across all skill levels, from beginners to Magnus Carlsen.
+* 🤖 **Grandmaster AI Roster:** Train against custom bots across all skill levels, from beginners to World Champions.
+* 💬 **Quick Chat System:** Communicate with your online opponents instantly using in-game emotes and quick messages.
 * 📊 **Real-Time Evaluation Meter:** Watch positional advantages shift dynamically after every move.
 * ⏱️ **Integrated Chess Clocks:** Keep match pacing sharp with accurate turn timers.
 * ⚡ **Zero Server Lag:** Direct browser networking ensures smooth, real-time piece movement.
@@ -43,6 +46,16 @@
 
 ---
 
+## 👥 Development Team
+
+This game was passionately created and developed by us from the ground up to push the limits of what a browser game can do.
+
+* **Creator & Lead Developer:** Aman
+* **Lead Game Tester & QA:** Akshat
+* **Engine & Logic:** Stockfish.js & Chess.js
+
+---
+
 <div align="center">
-  <sub>Created with ❤️ by Akshat</sub>
+  <sub>Created with ❤️ by Aman & Akshat</sub>
 </div>
