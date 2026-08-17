@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+       <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta name="google-site-verification" content="dF-bCP0mGJ_CmMYT4IuRVNIFDSJqzaY26YTx6CpzPXg" />
@@ -99,8 +99,6 @@
             overflow: hidden; 
             border: 2px solid var(--border); 
             box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
-            
-            /* MOBILE DRAG FIXES */
             touch-action: none; 
             -webkit-touch-callout: none;
             user-select: none;
@@ -115,7 +113,6 @@
         /* Interactive Highlight Indicators */
         .highlight-last { background-color: rgba(255, 255, 51, 0.4) !important; }
         .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
-        
         .highlight-selected { background-color: rgba(20, 85, 30, 0.5) !important; }
         
         .highlight-legal { position: relative; }
@@ -178,7 +175,7 @@
         <div class="subtitle">The ultimate online chess experience.</div>
 
         <div class="menu-container">
-            <button class="btn btn-primary" onclick="startSearch()">🌐 Play Online</button>
+            <button class="btn btn-primary" onclick="openLobby()">🌐 Play Online</button>
             <button class="btn" onclick="nav('screen-solo')">🤖 Practice vs Computer</button>
             <button class="btn" onclick="startLocalMatch()">👥 Pass & Play</button>
             <button class="btn" onclick="openSettings()" style="margin-top: 10px; background: transparent;">⚙️ Settings</button>
@@ -217,13 +214,26 @@
         <button class="btn" style="margin-top: 30px; width: 220px;" onclick="nav('screen-home')">⬅ Back to Menu</button>
     </div>
 
-    <!-- MATCHMAKING -->
-    <div id="screen-queue" class="screen">
-        <div class="loader-container">
+    <!-- NEW ONLINE LOBBY SYSTEM -->
+    <div id="screen-lobby" class="screen">
+        <h2 style="margin-bottom: 20px; font-size: 2.2rem;">Multiplayer Lobby</h2>
+        
+        <div id="lobby-ui" style="width: 100%; max-width: 450px;">
+            <button class="btn btn-primary" style="width: 100%; margin-bottom: 25px; font-size: 1.1rem; padding: 18px;" onclick="hostMatch()">➕ Host a Match</button>
+            
+            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Available Rooms</h3>
+            <div id="room-list" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 15px; min-height: 180px;">
+                <!-- Room listings will appear here -->
+            </div>
+            
+            <button class="btn" style="width: 100%; margin-top: 25px;" onclick="cancelSearch()">⬅ Back to Menu</button>
+        </div>
+
+        <div id="host-ui" style="display: none;" class="loader-container">
             <div class="spinner"></div>
-            <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Finding Opponent</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px;">Connecting to global matchmaking server...</p>
-            <button class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="cancelSearch()">Cancel Search</button>
+            <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Hosting Match</h3>
+            <p id="host-msg" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px;">Waiting for a player to join your room...</p>
+            <button class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="cancelSearch()">Cancel Match</button>
         </div>
     </div>
 
@@ -401,7 +411,6 @@
         function showLegalMoves(sq) {
             clearHighlights();
             $(`.square-${sq}`).addClass('highlight-selected');
-            
             let moves = gm.moves({ square: sq, verbose: true });
             moves.forEach(m => {
                 let targetSq = $(`.square-${m.to}`);
@@ -450,13 +459,11 @@
 
         $(document).on('click', '#board .square-55d63', function() {
             if(gm.game_over() || thinking) return;
-
             let sq = $(this).attr('data-square');
             
             if (selectedSq && selectedSq !== sq) {
                 let moves = gm.moves({verbose: true});
                 let validMove = moves.find(m => m.from === selectedSq && m.to === sq);
-                
                 if(validMove) {
                     let m = gm.move({from: selectedSq, to: sq, promotion: 'q'});
                     if(m) {
@@ -504,7 +511,6 @@
             drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
             
             const isCheck = gm.in_check();
-            
             if(gm.game_over()) { 
                 clearInterval(tmr); setLog(gm.in_checkmate()?'🏆 Checkmate. Match Over.':'🤝 Match Drawn.'); 
                 if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
@@ -570,58 +576,114 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // Networking with Host/Guest Tie-Breaker Logic
-        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), mInt = null, mState = 'idle', aTop = null;
+        // --- NEW CUSTOM ROOM NETWORKING ---
+        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), hostTimer = null, mState = 'idle', aTop = null;
+        
         function initNet() {
             if(mq) return;
             mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
             mq.on('connect', () => mq.subscribe(`nx_inbox_${mId}`));
             mq.on('message', (top, msg) => {
                 let d = JSON.parse(msg.toString());
-                if(top==='nx_lobby' && mState==='src') {
-                    if(d.a==='find' && d.id!==mId) {
-                        // TIE-BREAKER: Only the ID higher in the alphabet acts as the host!
-                        if (mId > d.id) {
-                            mState='play'; clearInterval(mInt);
-                            aTop = `nx_rm_${mId}_${d.id}`;
-                            mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'match', r:aTop}));
-                            joinNet('white'); // Host plays White
+                
+                // LOBBY LOGIC
+                if(top === 'nx_lobby_v3') {
+                    if(d.a === 'host' && d.id !== mId && mState === 'lobby') {
+                        $('#room-list').find('.searching-msg').remove();
+                        if($(`#rm_${d.id}`).length === 0) {
+                            $('#room-list').append(`
+                                <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--accent);">
+                                    <div class="pt-info">
+                                        <span style="font-size:1.2rem;">🟢</span> 
+                                        <div class="pt-name">Online Player Room</div>
+                                    </div>
+                                    <button class="btn btn-primary" style="padding:8px 16px; font-size:0.9rem;" onclick="joinRoom('${d.id}')">Join</button>
+                                </div>
+                            `);
                         }
                     }
+                    if(d.a === 'who' && mState === 'hosting') {
+                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId}));
+                    }
                 }
-                if(top===`nx_inbox_${mId}` && d.a==='match' && mState==='src') {
-                    mState='play'; clearInterval(mInt); aTop=d.r; 
-                    joinNet('black'); // Guest plays Black
+
+                // INBOX LOGIC
+                if(top === `nx_inbox_${mId}`) {
+                    if(d.a === 'join' && mState === 'hosting') {
+                        clearInterval(hostTimer);
+                        mState = 'play';
+                        aTop = `nx_rm_${mId}`; // Room is named after the host
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop}));
+                        joinNet('white'); // Host gets White
+                    }
+                    if(d.a === 'start' && mState === 'joining') {
+                        mState = 'play'; 
+                        aTop = d.r; 
+                        joinNet('black'); // Joiner gets Black
+                    }
                 }
-                if(top===aTop && mState==='play') {
-                    if(d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
-                    if(d.t==='chat' && d.s!==mId) {
+
+                // IN-GAME LOGIC
+                if(top === aTop && mState === 'play') {
+                    if(d.t === 'm' && d.s !== mId) applyMv(d.f, d.to, d.p);
+                    if(d.t === 'chat' && d.s !== mId) {
                         let safeMsg = document.createTextNode(d.msg).textContent;
                         appendChat(safeMsg, 'opp');
                     }
                 }
             });
         }
-        
-        function startSearch() {
-            mState = 'src'; nav('screen-queue'); if(!mq||!mq.connected) initNet();
+
+        // Open the Lobby Screen
+        function openLobby() {
+            mState = 'lobby'; nav('screen-lobby');
+            $('#lobby-ui').show(); $('#host-ui').hide(); 
+            $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#666; margin-top:20px;">Searching for rooms...</div>');
+            
+            if(!mq||!mq.connected) initNet();
             setTimeout(() => {
-                mq.subscribe('nx_lobby');
-                clearInterval(mInt); mInt = setInterval(() => { if(mState==='src') mq.publish('nx_lobby', JSON.stringify({a:'find', id:mId})); }, 1500);
+                mq.subscribe('nx_lobby_v3');
+                mq.publish('nx_lobby_v3', JSON.stringify({a:'who'})); 
             }, 500);
+        }
+
+        // Host clicks "Host a Match"
+        function hostMatch() {
+            mState = 'hosting';
+            $('#lobby-ui').hide(); $('#host-ui').show(); 
+            $('#host-msg').text("Waiting for a player to join your room...");
+            $('#room-list').empty(); 
+            
+            clearInterval(hostTimer);
+            hostTimer = setInterval(() => {
+                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId}));
+            }, 1500);
+        }
+
+        // Guest clicks "Join"
+        function joinRoom(hostId) {
+            mState = 'joining'; 
+            $('#lobby-ui').hide(); $('#host-ui').show(); 
+            $('#host-msg').text("Connecting to room...");
+            mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId}));
         }
 
         function joinNet(col) {
             mq.subscribe(aTop); gMode = 'net';
             $('#opp-avatar').text('🌐'); $('#opp-name').text('Online Player'); $('#btn-hint').hide();
-            
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">🔗 Connected to global opponent!</div>';
             startBrd(col); setLog('Match connected.');
         }
 
-        function cancelSearch() { mState = 'idle'; clearInterval(mInt); if(mq) { mq.unsubscribe('nx_lobby'); if(aTop) mq.unsubscribe(aTop); } nav('screen-home'); }
+        function cancelSearch() { 
+            mState = 'idle'; 
+            clearInterval(hostTimer); 
+            if(mq) { mq.unsubscribe('nx_lobby_v3'); if(aTop) mq.unsubscribe(aTop); } 
+            nav('screen-home'); 
+        }
+
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
     </script>
 </body>
 </html>
-                          
+                       
