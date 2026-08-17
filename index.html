@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta name="google-site-verification" content="dF-bCP0mGJ_CmMYT4IuRVNIFDSJqzaY26YTx6CpzPXg" />
@@ -120,20 +120,11 @@
         
         .highlight-legal { position: relative; }
         .highlight-legal::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 25%; height: 25%;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 2;
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 25%; height: 25%; background-color: rgba(0, 0, 0, 0.3); border-radius: 50%; pointer-events: none; z-index: 2;
         }
         .highlight-legal.has-piece::after {
-            width: 80%; height: 80%;
-            background-color: transparent;
-            border: 5px solid rgba(0, 0, 0, 0.3);
+            width: 80%; height: 80%; background-color: transparent; border: 5px solid rgba(0, 0, 0, 0.3);
         }
 
         .eval-container { width: 18px; background: #222; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border); }
@@ -384,7 +375,7 @@
         function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Hint provided on board.'); } }
 
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
-        let selectedSq = null; // Variable for Click-To-Move selection
+        let selectedSq = null; 
 
         function initCPU(b) { 
             gMode = 'cpu'; aBot = b; 
@@ -403,7 +394,6 @@
             startBrd('white'); setLog('Local Pass & Play started.'); 
         }
 
-        // --- NEW HIGHLIGHT AND MOVE LOGIC ---
         function clearHighlights() {
             $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected');
         }
@@ -416,7 +406,7 @@
             moves.forEach(m => {
                 let targetSq = $(`.square-${m.to}`);
                 targetSq.addClass('highlight-legal');
-                if (gm.get(m.to)) targetSq.addClass('has-piece'); // Target ring for capture
+                if (gm.get(m.to)) targetSq.addClass('has-piece'); 
             });
         }
 
@@ -435,19 +425,15 @@
                         if(myCol==='b'&&p.search(/^w/)!==-1) return false; 
                         if(gm.turn()!==myCol) return false; 
                     }
-                    // Highlight on drag start
                     selectedSq = s;
                     showLegalMoves(s);
                 },
                 onDrop: (s, t) => {
                     clearHighlights();
-                    
                     if (s === t) {
-                        // User just tapped the piece, keep highlighting for Tap-to-Move
                         showLegalMoves(s);
                         return 'snapback';
                     }
-
                     let m = gm.move({from:s,to:t,promotion:'q'});
                     if(m===null) return 'snapback';
                     
@@ -462,13 +448,11 @@
             nav('screen-match');
         }
 
-        // Tap-To-Move Click Listener
         $(document).on('click', '#board .square-55d63', function() {
             if(gm.game_over() || thinking) return;
 
             let sq = $(this).attr('data-square');
             
-            // Check if completing a valid tap-to-move
             if (selectedSq && selectedSq !== sq) {
                 let moves = gm.moves({verbose: true});
                 let validMove = moves.find(m => m.from === selectedSq && m.to === sq);
@@ -487,7 +471,6 @@
                 }
             }
             
-            // Allow selecting a piece to move via tap
             let piece = gm.get(sq);
             if (piece && piece.color === gm.turn()) {
                 if((gMode==='net' || gMode==='cpu') && gm.turn() !== myCol) {
@@ -587,7 +570,7 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // Networking
+        // Networking with Host/Guest Tie-Breaker Logic
         let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), mInt = null, mState = 'idle', aTop = null;
         function initNet() {
             if(mq) return;
@@ -597,14 +580,18 @@
                 let d = JSON.parse(msg.toString());
                 if(top==='nx_lobby' && mState==='src') {
                     if(d.a==='find' && d.id!==mId) {
-                        mState='play'; clearInterval(mInt);
-                        aTop = `nx_rm_${d.id}_${mId}`;
-                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'match', r:aTop}));
-                        joinNet('black');
+                        // TIE-BREAKER: Only the ID higher in the alphabet acts as the host!
+                        if (mId > d.id) {
+                            mState='play'; clearInterval(mInt);
+                            aTop = `nx_rm_${mId}_${d.id}`;
+                            mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'match', r:aTop}));
+                            joinNet('white'); // Host plays White
+                        }
                     }
                 }
                 if(top===`nx_inbox_${mId}` && d.a==='match' && mState==='src') {
-                    mState='play'; clearInterval(mInt); aTop=d.r; joinNet('white');
+                    mState='play'; clearInterval(mInt); aTop=d.r; 
+                    joinNet('black'); // Guest plays Black
                 }
                 if(top===aTop && mState==='play') {
                     if(d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
@@ -637,3 +624,4 @@
     </script>
 </body>
 </html>
+                          
