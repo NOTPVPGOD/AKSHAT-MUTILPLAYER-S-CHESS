@@ -93,7 +93,18 @@
         .board-column { width: 100%; max-width: 540px; display: flex; flex-direction: column; gap: 10px; }
         .board-layout { display: flex; gap: 12px; }
         
-        #board { width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        #board { 
+            width: 100%; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 2px solid var(--border); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
+            
+            /* MOBILE DRAG FIXES */
+            touch-action: none; 
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
         
         /* Themes */
         .theme-default .white-1e1d7 { background-color: #ebecd0 !important; } .theme-default .black-3c85d { background-color: #739552 !important; }
@@ -101,8 +112,29 @@
         .theme-cyber .white-1e1d7 { background-color: #2b2b46 !important; } .theme-cyber .black-3c85d { background-color: #121224 !important; }
         .theme-emerald .white-1e1d7 { background-color: #e0f2fe !important; } .theme-emerald .black-3c85d { background-color: #0284c7 !important; }
         
-        .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
+        /* Interactive Highlight Indicators */
         .highlight-last { background-color: rgba(255, 255, 51, 0.4) !important; }
+        .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
+        
+        .highlight-selected { background-color: rgba(20, 85, 30, 0.5) !important; }
+        
+        .highlight-legal { position: relative; }
+        .highlight-legal::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 25%; height: 25%;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .highlight-legal.has-piece::after {
+            width: 80%; height: 80%;
+            background-color: transparent;
+            border: 5px solid rgba(0, 0, 0, 0.3);
+        }
 
         .eval-container { width: 18px; background: #222; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border); }
         .eval-fill { background: #fff; width: 100%; height: 50%; transition: height 0.5s ease; }
@@ -121,7 +153,6 @@
         
         .notation-history { height: 90px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 35px 1fr 1fr; gap: 4px; align-content: start; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
 
-        /* NEW CHAT BUBBLES UI */
         .chat-display { flex-grow: 1; background: #000; border-radius: 8px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); margin-bottom: 10px; min-height: 200px; }
         .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
         .chat-msg.you { align-self: flex-end; background: var(--chat-you); color: #fff; border-bottom-right-radius: 3px; }
@@ -244,7 +275,6 @@
                     
                     <div class="notation-history" id="notation"></div>
 
-                    <!-- NEW CHAT UI -->
                     <div class="chat-display" id="chat-display">
                         <div class="chat-msg sys">Chat started. Be friendly!</div>
                     </div>
@@ -311,7 +341,7 @@
             if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
         }
 
-        // Bot Profiles (Added Personality quotes)
+        // Bot Profiles 
         const ROSTER = [
             { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "I'm just clicking buttons!"] },
             { id: 'b2', name: 'Jimmy', avatar: '📗', rating: '900', lvl: 3, tm: 200, quotes: ["Control the center!", "Don't forget to develop your pieces.", "Always castle early."] },
@@ -354,6 +384,7 @@
         function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Hint provided on board.'); } }
 
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
+        let selectedSq = null; // Variable for Click-To-Move selection
 
         function initCPU(b) { 
             gMode = 'cpu'; aBot = b; 
@@ -361,8 +392,6 @@
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
             startBrd('white'); setLog(`Match started vs ${b.name}`);
-            
-            // Bot says hello
             setTimeout(() => { appendChat(b.quotes[0] || "Hello human!", 'opp'); }, 1000);
         }
         
@@ -374,23 +403,57 @@
             startBrd('white'); setLog('Local Pass & Play started.'); 
         }
 
+        // --- NEW HIGHLIGHT AND MOVE LOGIC ---
+        function clearHighlights() {
+            $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected');
+        }
+
+        function showLegalMoves(sq) {
+            clearHighlights();
+            $(`.square-${sq}`).addClass('highlight-selected');
+            
+            let moves = gm.moves({ square: sq, verbose: true });
+            moves.forEach(m => {
+                let targetSq = $(`.square-${m.to}`);
+                targetSq.addClass('highlight-legal');
+                if (gm.get(m.to)) targetSq.addClass('has-piece'); // Target ring for capture
+            });
+        }
+
         function startBrd(or) {
             gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
             drawUI();
+            selectedSq = null;
+            
             brd = Chessboard('board', {
                 draggable: true, position: 'start', orientation: or,
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
                 onDragStart: (s,p) => {
                     if(gm.game_over()||thinking) return false;
-                    if(gMode==='net'||gMode==='cpu') { if(myCol==='w'&&p.search(/^b/)!==-1) return false; if(myCol==='b'&&p.search(/^w/)!==-1) return false; if(gm.turn()!==myCol) return false; }
+                    if(gMode==='net'||gMode==='cpu') { 
+                        if(myCol==='w'&&p.search(/^b/)!==-1) return false; 
+                        if(myCol==='b'&&p.search(/^w/)!==-1) return false; 
+                        if(gm.turn()!==myCol) return false; 
+                    }
+                    // Highlight on drag start
+                    selectedSq = s;
+                    showLegalMoves(s);
                 },
-                onDrop: (s,t) => {
+                onDrop: (s, t) => {
+                    clearHighlights();
+                    
+                    if (s === t) {
+                        // User just tapped the piece, keep highlighting for Tap-to-Move
+                        showLegalMoves(s);
+                        return 'snapback';
+                    }
+
                     let m = gm.move({from:s,to:t,promotion:'q'});
                     if(m===null) return 'snapback';
                     
-                    const isCap = gm.get(t) !== null;
-                    playSfx(isCap ? 'c' : 'm'); 
-                    finishMv(m, isCap);
+                    selectedSq = null;
+                    playSfx(m.captured ? 'c' : 'm'); 
+                    finishMv(m);
                     
                     if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:s,to:t,p:'q',s:mId}));
                 },
@@ -399,16 +462,52 @@
             nav('screen-match');
         }
 
+        // Tap-To-Move Click Listener
+        $(document).on('click', '#board .square-55d63', function() {
+            if(gm.game_over() || thinking) return;
+
+            let sq = $(this).attr('data-square');
+            
+            // Check if completing a valid tap-to-move
+            if (selectedSq && selectedSq !== sq) {
+                let moves = gm.moves({verbose: true});
+                let validMove = moves.find(m => m.from === selectedSq && m.to === sq);
+                
+                if(validMove) {
+                    let m = gm.move({from: selectedSq, to: sq, promotion: 'q'});
+                    if(m) {
+                        brd.position(gm.fen());
+                        playSfx(m.captured ? 'c' : 'm');
+                        finishMv(m);
+                        if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:selectedSq,to:sq,p:'q',s:mId}));
+                    }
+                    selectedSq = null;
+                    clearHighlights();
+                    return;
+                }
+            }
+            
+            // Allow selecting a piece to move via tap
+            let piece = gm.get(sq);
+            if (piece && piece.color === gm.turn()) {
+                if((gMode==='net' || gMode==='cpu') && gm.turn() !== myCol) {
+                    selectedSq = null; clearHighlights(); return; 
+                }
+                selectedSq = sq;
+                showLegalMoves(sq);
+            } else {
+                selectedSq = null;
+                clearHighlights();
+            }
+        });
+
         function applyMv(s, t, p) { 
-            const isCap = gm.get(t) !== null;
             let m = gm.move({from:s,to:t,promotion:p}); 
-            if(m) { brd.position(gm.fen()); playSfx(isCap ? 'c' : 'm'); finishMv(m, isCap); } 
+            if(m) { brd.position(gm.fen()); playSfx(m.captured ? 'c' : 'm'); finishMv(m); } 
         }
         
-        // AI Personality Chat Trigger
         function triggerBotChat(isCheck, isCapture) {
-            if(gMode !== 'cpu' || Math.random() > 0.4) return; // 40% chance to say something
-            
+            if(gMode !== 'cpu' || Math.random() > 0.4) return;
             setTimeout(() => {
                 let msg = aBot.quotes[Math.floor(Math.random() * aBot.quotes.length)];
                 if(isCheck && Math.random() > 0.5) msg = "Watch your king! ⚠️";
@@ -417,7 +516,7 @@
             }, 800 + Math.random() * 1000);
         }
 
-        function finishMv(m, isCap) {
+        function finishMv(m) {
             $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
             drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
             
@@ -428,12 +527,10 @@
                 if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
             } else { 
                 if(isCheck) setLog('⚠️ Check!'); else setLog(''); 
-                
                 if(gMode==='cpu' && gm.turn()!==myCol) {
                     setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250);
                 } else if (gMode==='cpu' && gm.turn()===myCol) {
-                    // Bot just moved, trigger chat
-                    triggerBotChat(isCheck, isCap);
+                    triggerBotChat(isCheck, m.captured !== undefined);
                 }
             }
         }
@@ -462,7 +559,6 @@
         }
         function setLog(t) { if(t) $('#match-status').html(t); }
 
-        // NEW UI Chat System (Bubbles)
         function appendChat(text, type) {
             const chatBox = document.getElementById('chat-display');
             const msgDiv = document.createElement('div');
@@ -477,7 +573,6 @@
             if(gMode === 'net' && mq && aTop) {
                 mq.publish(aTop, JSON.stringify({ t: 'chat', msg: msg, s: mId }));
             } else if (gMode === 'cpu') {
-                // Bots sometimes reply when you talk to them!
                 if(Math.random() > 0.5) setTimeout(() => { appendChat("🤔 I am calculating...", 'opp'); }, 1000);
             }
         }
@@ -514,7 +609,7 @@
                 if(top===aTop && mState==='play') {
                     if(d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
                     if(d.t==='chat' && d.s!==mId) {
-                        let safeMsg = document.createTextNode(d.msg).textContent; // HTML Sanitization
+                        let safeMsg = document.createTextNode(d.msg).textContent;
                         appendChat(safeMsg, 'opp');
                     }
                 }
