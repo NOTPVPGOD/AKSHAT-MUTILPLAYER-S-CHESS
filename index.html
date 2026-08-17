@@ -1298,5 +1298,30 @@
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
     </script>
+<script type="module">
+  // 1. Import the core Firebase App
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  
+  // 2. Import the Firebase Authentication library
+  import { getAuth } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
+    authDomain: "akshat-chess.firebaseapp.com",
+    projectId: "akshat-chess",
+    storageBucket: "akshat-chess.firebasestorage.app",
+    messagingSenderId: "821222063303",
+    appId: "1:821222063303:web:79945a324b70b0eed592e2"
+  };
+
+  // 3. Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+
+  // 4. Initialize the Authentication service
+  const auth = getAuth(app);
+  
+  // (Your login and signup functions will go right here!)
+</script>
 </body>
 </html>
