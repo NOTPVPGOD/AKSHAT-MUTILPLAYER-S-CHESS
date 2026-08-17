@@ -70,6 +70,9 @@
         .btn:hover { background: rgba(255,255,255,0.1); border-color: #555; transform: translateY(-2px); }
         .btn-primary { background: var(--text-main); color: var(--bg-color); border: none; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
         .btn-primary:hover { background: #e5e5e5; box-shadow: 0 0 30px rgba(255,255,255,0.4); }
+        
+        .login-input { background: #000; border: 2px solid var(--border); color: #fff; padding: 16px; border-radius: 12px; font-family: 'Inter'; font-size: 1.2rem; text-align: center; width: 100%; outline: none; transition: 0.3s; margin-bottom: 15px; }
+        .login-input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-hover); }
 
         /* Settings Modal */
         #settings-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
@@ -94,14 +97,8 @@
         .board-layout { display: flex; gap: 12px; }
         
         #board { 
-            width: 100%; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            border: 2px solid var(--border); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
-            touch-action: none; 
-            -webkit-touch-callout: none;
-            user-select: none;
+            width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
+            touch-action: none; -webkit-touch-callout: none; user-select: none;
         }
         
         /* Themes */
@@ -110,19 +107,15 @@
         .theme-cyber .white-1e1d7 { background-color: #2b2b46 !important; } .theme-cyber .black-3c85d { background-color: #121224 !important; }
         .theme-emerald .white-1e1d7 { background-color: #e0f2fe !important; } .theme-emerald .black-3c85d { background-color: #0284c7 !important; }
         
-        /* Interactive Highlight Indicators */
         .highlight-last { background-color: rgba(255, 255, 51, 0.4) !important; }
         .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
         .highlight-selected { background-color: rgba(20, 85, 30, 0.5) !important; }
-        
         .highlight-legal { position: relative; }
         .highlight-legal::after {
             content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 25%; height: 25%; background-color: rgba(0, 0, 0, 0.3); border-radius: 50%; pointer-events: none; z-index: 2;
         }
-        .highlight-legal.has-piece::after {
-            width: 80%; height: 80%; background-color: transparent; border: 5px solid rgba(0, 0, 0, 0.3);
-        }
+        .highlight-legal.has-piece::after { width: 80%; height: 80%; background-color: transparent; border: 5px solid rgba(0, 0, 0, 0.3); }
 
         .eval-container { width: 18px; background: #222; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border); }
         .eval-fill { background: #fff; width: 100%; height: 50%; transition: height 0.5s ease; }
@@ -133,12 +126,9 @@
         .pt-captures { font-size: 1.1rem; color: var(--text-muted); letter-spacing: 2px; }
         .pt-clock { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; background: #000; padding: 4px 10px; border-radius: 6px; color: #fff; border: 1px solid #333; }
 
-        /* Sidebar, Chat & Notation */
         .sidebar-column { flex: 1; min-width: 320px; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
         .log-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; max-height: 670px; }
-        
         .status-msg { padding: 10px; margin-bottom: 10px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 0.95rem; font-weight: 600; text-align: center; }
-        
         .notation-history { height: 90px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 35px 1fr 1fr; gap: 4px; align-content: start; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
 
         .chat-display { flex-grow: 1; background: #000; border-radius: 8px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); margin-bottom: 10px; min-height: 200px; }
@@ -156,7 +146,6 @@
         .custom-chat-input:focus { border-color: var(--accent); }
         .custom-chat-btn { background: var(--accent); border: none; color: white; padding: 0 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .custom-chat-btn:hover { background: var(--accent-hover); }
-
         .action-row { display: flex; gap: 10px; margin-top: 10px; }
         .action-row button { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
     </style>
@@ -169,10 +158,20 @@
         <div class="splash-subtitle">LOADING...</div>
     </div>
 
+    <!-- NEW LOGIN SCREEN -->
+    <div id="screen-login" class="screen">
+        <div class="logo">👋 Welcome!</div>
+        <div class="subtitle">Create a username to join the multiplayer server.</div>
+        <div class="menu-container">
+            <input type="text" id="username-input" class="login-input" placeholder="Enter Username..." maxlength="12">
+            <button class="btn btn-primary" onclick="saveUsername()">Save & Continue</button>
+        </div>
+    </div>
+
     <!-- MAIN MENU -->
     <div id="screen-home" class="screen">
         <div class="logo">♟️ Akshat's Chess</div>
-        <div class="subtitle">The ultimate online chess experience.</div>
+        <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
             <button class="btn btn-primary" onclick="openLobby()">🌐 Play Online</button>
@@ -201,6 +200,10 @@
                     <option value="on">Sound ON 🔊</option>
                     <option value="off">Sound OFF 🔇</option>
                 </select>
+            </div>
+            <div class="setting-row">
+                <label style="font-weight: 600;">Change Name</label>
+                <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="changeName()">Edit Profile</button>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
         </div>
@@ -292,7 +295,7 @@
 
                     <div class="chat-chips">
                         <button class="chat-chip" onclick="sendChat('Good luck!')">👋 Hi</button>
-                        <button class="chat-chip" onclick="sendChat('Nice move!')">🎯 Nice move</button>
+                        <button class="chat-chip" onclick="sendChat('Nice move!')">🎯 Nice</button>
                         <button class="chat-chip" onclick="sendChat('Oops!')">😅 Oops</button>
                         <button class="chat-chip" onclick="sendChat('🔥')">🔥</button>
                         <button class="chat-chip" onclick="sendChat('🤯')">🤯</button>
@@ -325,11 +328,12 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script>
-        // --- Core Setup & Routing ---
+        // --- Core Setup & Routing & User Profiles ---
         let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), hostTimer = null, mState = 'idle', aTop = null;
+        let playerName = localStorage.getItem('akshat_chess_user') || "";
+        let oppName = "Opponent";
         
         window.addEventListener('load', () => {
-            // Check for direct friend invite link
             const urlParams = new URLSearchParams(window.location.search);
             const joinId = urlParams.get('join');
 
@@ -338,15 +342,38 @@
                 setTimeout(() => { 
                     document.getElementById('splash-screen').style.display = 'none'; 
                     
-                    if(joinId) {
-                        openLobby();
-                        setTimeout(() => joinRoom(joinId), 1000); // Wait for MQTT to connect, then join
+                    if(playerName === "") {
+                        document.getElementById('screen-login').classList.add('active');
                     } else {
-                        document.getElementById('screen-home').classList.add('active');
+                        document.getElementById('welcome-text').innerText = "Welcome back, " + playerName + "!";
+                        if(joinId) {
+                            openLobby();
+                            setTimeout(() => joinRoom(joinId), 1000);
+                        } else {
+                            document.getElementById('screen-home').classList.add('active');
+                        }
                     }
                 }, 800);
             }, 1500);
         });
+
+        function saveUsername() {
+            let input = document.getElementById('username-input').value.trim();
+            if(input.length >= 3) {
+                playerName = input;
+                localStorage.setItem('akshat_chess_user', playerName);
+                document.getElementById('welcome-text').innerText = "Welcome, " + playerName + "!";
+                nav('screen-home');
+            } else {
+                alert("Username must be at least 3 characters!");
+            }
+        }
+
+        function changeName() {
+            closeSettings();
+            document.getElementById('username-input').value = playerName;
+            nav('screen-login');
+        }
 
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
@@ -354,7 +381,6 @@
 
         // --- Audio & Voice Announcer System ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playSfx(t) {
             if(document.getElementById('sound-select').value === 'off') return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -367,8 +393,7 @@
         function speak(text) {
             if(document.getElementById('sound-select').value === 'off') return;
             let msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.1; // Slightly faster reading
-            msg.pitch = 0.9;
+            msg.rate = 1.1; msg.pitch = 0.9;
             window.speechSynthesis.speak(msg);
         }
 
@@ -420,24 +445,24 @@
 
         function initCPU(b) { 
             gMode = 'cpu'; aBot = b; 
-            $('#opp-avatar').text(b.avatar); $('#opp-name').text(b.name); 
+            oppName = b.name;
+            $('#opp-avatar').text(b.avatar); $('#opp-name').text(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
-            startBrd('white'); setLog(`Match started vs ${b.name}`);
+            startBrd('white'); setLog(`Match started vs ${oppName}`);
             setTimeout(() => { appendChat(b.quotes[0] || "Hello human!", 'opp'); }, 1000);
         }
         
         function startLocalMatch() { 
             gMode = 'local'; 
-            $('#opp-avatar').text('👥'); $('#opp-name').text('Player 2'); 
+            oppName = "Player 2";
+            $('#opp-avatar').text('👥'); $('#opp-name').text(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match</div>';
             startBrd('white'); setLog('Local Pass & Play started.'); 
         }
 
-        function clearHighlights() {
-            $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected');
-        }
+        function clearHighlights() { $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected'); }
 
         function showLegalMoves(sq) {
             clearHighlights();
@@ -452,6 +477,7 @@
 
         function startBrd(or) {
             gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
+            $('#plr-name').text(playerName);
             drawUI();
             selectedSq = null;
             
@@ -465,22 +491,15 @@
                         if(myCol==='b'&&p.search(/^w/)!==-1) return false; 
                         if(gm.turn()!==myCol) return false; 
                     }
-                    selectedSq = s;
-                    showLegalMoves(s);
+                    selectedSq = s; showLegalMoves(s);
                 },
                 onDrop: (s, t) => {
                     clearHighlights();
-                    if (s === t) {
-                        showLegalMoves(s);
-                        return 'snapback';
-                    }
+                    if (s === t) { showLegalMoves(s); return 'snapback'; }
                     let m = gm.move({from:s,to:t,promotion:'q'});
                     if(m===null) return 'snapback';
                     
-                    selectedSq = null;
-                    playSfx(m.captured ? 'c' : 'm'); 
-                    finishMv(m);
-                    
+                    selectedSq = null; playSfx(m.captured ? 'c' : 'm'); finishMv(m);
                     if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:s,to:t,p:'q',s:mId}));
                 },
                 onSnapEnd: () => brd.position(gm.fen())
@@ -498,27 +517,19 @@
                 if(validMove) {
                     let m = gm.move({from: selectedSq, to: sq, promotion: 'q'});
                     if(m) {
-                        brd.position(gm.fen());
-                        playSfx(m.captured ? 'c' : 'm');
-                        finishMv(m);
+                        brd.position(gm.fen()); playSfx(m.captured ? 'c' : 'm'); finishMv(m);
                         if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:selectedSq,to:sq,p:'q',s:mId}));
                     }
-                    selectedSq = null;
-                    clearHighlights();
-                    return;
+                    selectedSq = null; clearHighlights(); return;
                 }
             }
             
             let piece = gm.get(sq);
             if (piece && piece.color === gm.turn()) {
-                if((gMode==='net' || gMode==='cpu') && gm.turn() !== myCol) {
-                    selectedSq = null; clearHighlights(); return; 
-                }
-                selectedSq = sq;
-                showLegalMoves(sq);
+                if((gMode==='net' || gMode==='cpu') && gm.turn() !== myCol) { selectedSq = null; clearHighlights(); return; }
+                selectedSq = sq; showLegalMoves(sq);
             } else {
-                selectedSq = null;
-                clearHighlights();
+                selectedSq = null; clearHighlights();
             }
         });
 
@@ -542,50 +553,30 @@
             drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
             
             const isCheck = gm.in_check();
-            
             if(gm.game_over()) { 
                 clearInterval(tmr); 
-                if(gm.in_checkmate()) {
-                    setLog('🏆 Checkmate. Match Over.');
-                    speak("Checkmate!");
-                } else {
-                    setLog('🤝 Match Drawn.');
-                }
+                if(gm.in_checkmate()) { setLog('🏆 Checkmate. Match Over.'); speak("Checkmate!"); } 
+                else { setLog('🤝 Match Drawn.'); }
                 if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
             } else { 
-                if(isCheck) {
-                    setLog('⚠️ Check!'); 
-                    speak("Check.");
-                } else {
-                    setLog(''); 
-                }
+                if(isCheck) { setLog('⚠️ Check!'); speak("Check."); } else { setLog(''); }
                 
-                if(gMode==='cpu' && gm.turn()!==myCol) {
-                    setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250);
-                } else if (gMode==='cpu' && gm.turn()===myCol) {
-                    triggerBotChat(isCheck, m.captured !== undefined);
-                }
+                if(gMode==='cpu' && gm.turn()!==myCol) { setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250); } 
+                else if (gMode==='cpu' && gm.turn()===myCol) { triggerBotChat(isCheck, m.captured !== undefined); }
             }
         }
 
-        // --- DISCONNECT / RESIGN SYSTEM ---
         function quitMatch() { 
             if(confirm("Are you sure you want to resign and exit?")) {
-                if(gMode === 'net' && mq && aTop) {
-                    // Tell opponent you left so they win!
-                    mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-                }
+                if(gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
                 clearInterval(tmr); 
                 if(gMode==='net') cancelSearch(); 
                 nav('screen-home'); 
             }
         }
 
-        // Catch if they close the browser tab
         window.addEventListener('beforeunload', () => {
-            if (mState === 'play' && gMode === 'net' && mq && aTop) {
-                mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-            }
+            if (mState === 'play' && gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
         });
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
@@ -634,7 +625,7 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // --- Custom Room Networking ---
+        // --- Custom Room Networking With Saved Usernames ---
         function initNet() {
             if(mq) return;
             mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
@@ -646,11 +637,12 @@
                     if(d.a === 'host' && d.id !== mId && mState === 'lobby') {
                         $('#room-list').find('.searching-msg').remove();
                         if($(`#rm_${d.id}`).length === 0) {
+                            let displayName = d.n ? d.n : "Online Player";
                             $('#room-list').append(`
                                 <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--accent);">
                                     <div class="pt-info">
                                         <span style="font-size:1.2rem;">🟢</span> 
-                                        <div class="pt-name">Online Player Room</div>
+                                        <div class="pt-name">${displayName}'s Room</div>
                                     </div>
                                     <button class="btn btn-primary" style="padding:8px 16px; font-size:0.9rem;" onclick="joinRoom('${d.id}')">Join</button>
                                 </div>
@@ -658,7 +650,7 @@
                         }
                     }
                     if(d.a === 'who' && mState === 'hosting') {
-                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId}));
+                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName}));
                     }
                 }
 
@@ -667,12 +659,14 @@
                         clearInterval(hostTimer);
                         mState = 'play';
                         aTop = `nx_rm_${mId}`; 
-                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop}));
+                        oppName = d.n ? d.n : "Opponent"; // Save Guest Name
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName}));
                         joinNet('white'); 
                     }
                     if(d.a === 'start' && mState === 'joining') {
                         mState = 'play'; 
                         aTop = d.r; 
+                        oppName = d.n ? d.n : "Opponent"; // Save Host Name
                         joinNet('black'); 
                     }
                 }
@@ -685,10 +679,10 @@
                     }
                     if(d.t === 'resign' && d.s !== mId) {
                         clearInterval(tmr);
-                        setLog('🏆 Opponent disconnected. You win!');
-                        appendChat("Opponent left the match. You win!", 'sys');
+                        setLog('🏆 ' + oppName + ' disconnected. You win!');
+                        appendChat(oppName + " left the match. You win!", 'sys');
                         speak("Opponent disconnected. You win.");
-                        $('#btn-hint').hide(); // disable further play
+                        $('#btn-hint').hide();
                     }
                 }
             });
@@ -712,21 +706,20 @@
             $('#host-msg').text("Waiting for a player to join your room...");
             $('#room-list').empty(); 
             
-            // Build the Friend Invite Link
             let baseURL = window.location.href.split('?')[0];
             let inviteLink = baseURL + "?join=" + mId;
             document.getElementById('invite-link').value = inviteLink;
 
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId}));
+                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName}));
             }, 1500);
         }
 
         function copyInvite() {
             let copyText = document.getElementById("invite-link");
             copyText.select();
-            copyText.setSelectionRange(0, 99999); // For mobile devices
+            copyText.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(copyText.value);
             alert("Invite link copied! Send it to your friend.");
         }
@@ -739,14 +732,16 @@
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId}));
+                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName}));
             }, 1000);
         }
 
         function joinNet(col) {
             mq.subscribe(aTop); gMode = 'net';
-            $('#opp-avatar').text('🌐'); $('#opp-name').text('Online Player'); $('#btn-hint').hide();
-            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">🔗 Connected to global opponent!</div>';
+            $('#opp-avatar').text('🌐'); 
+            $('#opp-name').text(oppName); 
+            $('#btn-hint').hide();
+            document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">🔗 Connected to ${oppName}!</div>`;
             startBrd(col); setLog('Match connected.');
         }
 
@@ -754,8 +749,6 @@
             mState = 'idle'; 
             clearInterval(hostTimer); 
             if(mq) { mq.unsubscribe('nx_lobby_v3'); if(aTop) mq.unsubscribe(aTop); } 
-            
-            // Remove ?join URL param if they cancel
             window.history.replaceState({}, document.title, window.location.pathname);
             nav('screen-home'); 
         }
