@@ -24,6 +24,7 @@
             --success: #10b981;
             --chat-you: #2563eb;
             --chat-opp: #2a2a2a;
+            --gold: #f59e0b;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,12 +57,18 @@
         .splash-subtitle { color: var(--accent); margin-top: 10px; font-weight: 600; letter-spacing: 2px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        /* Ban Lock Overlay */
+        #ban-screen {
+            display: none; position: fixed; inset: 0; background: #000; z-index: 10000;
+            flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+
         .screen { display: none; width: 100%; max-width: 1050px; animation: fadeIn 0.5s ease forwards; }
         .screen.active { display: flex; flex-direction: column; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Typography & Header */
-        .logo { font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 5px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        .logo { font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 5px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.1); cursor: pointer; }
         .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 40px; font-weight: 500; text-align: center; }
 
         /* Menus */
@@ -74,11 +81,27 @@
         .login-input { background: #000; border: 2px solid var(--border); color: #fff; padding: 16px; border-radius: 12px; font-family: 'Inter'; font-size: 1.2rem; text-align: center; width: 100%; outline: none; transition: 0.3s; margin-bottom: 15px; }
         .login-input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-hover); }
 
+        /* Badges */
+        .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; margin-left: 6px; }
+        .badge-dev { background: #ef4444; color: #fff; }
+        .badge-vip { background: #f59e0b; color: #000; }
+        .badge-mod { background: #3b82f6; color: #fff; }
+        .badge-master { background: #10b981; color: #fff; }
+
         /* Settings Modal */
-        #settings-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .settings-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; width: 100%; max-width: 400px; }
+        #settings-modal, #admin-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .settings-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; width: 100%; max-width: 420px; }
+        .admin-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 25px; width: 100%; max-width: 750px; max-height: 85vh; display: flex; flex-direction: column; }
         .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         select { background: var(--bg-color); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; font-family: 'Inter'; outline: none; }
+
+        /* Admin Dashboard UI */
+        .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+        .player-row .info { display: flex; flex-direction: column; gap: 4px; }
+        .player-row .actions { display: flex; gap: 6px; }
+        .btn-small { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface-hover); color: #fff; }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
 
         /* Matchmaking & Roster */
         .loader-container { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; text-align: center; max-width: 400px; width: 100%; }
@@ -122,7 +145,7 @@
 
         .player-tag { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); }
         .pt-info { display: flex; align-items: center; gap: 12px; }
-        .pt-name { font-weight: 700; font-size: 1.05rem; }
+        .pt-name { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; }
         .pt-captures { font-size: 1.1rem; color: var(--text-muted); letter-spacing: 2px; }
         .pt-clock { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; background: #000; padding: 4px 10px; border-radius: 6px; color: #fff; border: 1px solid #333; }
 
@@ -152,13 +175,22 @@
 </head>
 <body class="theme-default">
 
+    <!-- BAN LOCK OVERLAY -->
+    <div id="ban-screen">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🚫</div>
+        <h1 style="color: var(--danger); font-size: 2.5rem; margin-bottom: 10px;">Access Revoked</h1>
+        <p style="color: var(--text-muted); max-width: 450px; font-size: 1.1rem; line-height: 1.5;">
+            Your account has been permanently suspended by the server administrator for violating game rules.
+        </p>
+    </div>
+
     <!-- SPLASH SCREEN -->
     <div id="splash-screen">
         <div class="splash-title">♟️ AKSHAT'S CHESS</div>
         <div class="splash-subtitle">LOADING...</div>
     </div>
 
-    <!-- NEW LOGIN SCREEN -->
+    <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen">
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Create a username to join the multiplayer server.</div>
@@ -170,7 +202,8 @@
 
     <!-- MAIN MENU -->
     <div id="screen-home" class="screen">
-        <div class="logo">♟️ Akshat's Chess</div>
+        <!-- SECRET ADMIN TAP: Tap this logo 5 times to open the admin panel -->
+        <div class="logo" onclick="handleLogoTap()">♟️ Akshat's Chess</div>
         <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
@@ -209,7 +242,27 @@
                 <label style="font-weight: 600;">Change Name</label>
                 <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="changeName()">Edit Profile</button>
             </div>
+            <!-- ADMIN BUTTON REMOVED FROM HERE! -->
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
+        </div>
+    </div>
+
+    <!-- LIVE ADMIN DASHBOARD MODAL -->
+    <div id="admin-modal">
+        <div class="admin-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="font-size: 1.4rem;">🛡️ Server Admin & Live Player Tracker</h2>
+                <button class="btn-small" onclick="closeAdmin()">✕ Close</button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted);">
+                <span>Active Players: <strong id="admin-player-count" style="color: var(--accent);">0</strong></span>
+                <span>Auto-refreshes in real-time</span>
+            </div>
+
+            <div id="admin-player-list" style="overflow-y: auto; flex-grow: 1; min-height: 250px; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                <!-- Live active player entries appear here -->
+            </div>
         </div>
     </div>
 
@@ -241,7 +294,6 @@
             <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Hosting Match</h3>
             <p id="host-msg" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Waiting for a player to join...</p>
             
-            <!-- Invite Link Section -->
             <div style="background: #000; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 25px; text-align: left;">
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;">INVITE A FRIEND DIRECTLY:</div>
                 <div style="display: flex; gap: 8px;">
@@ -257,7 +309,6 @@
     <!-- ACTIVE MATCH -->
     <div id="screen-match" class="screen">
         <div class="match-layout">
-            
             <div class="board-column">
                 <div class="player-tag">
                     <div class="pt-info">
@@ -290,7 +341,6 @@
             <div class="sidebar-column">
                 <div class="log-box">
                     <div class="status-msg" id="match-status">Match started. Good luck!</div>
-                    
                     <div class="notation-history" id="notation"></div>
 
                     <div class="chat-display" id="chat-display">
@@ -321,7 +371,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -332,14 +381,29 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script>
-        // --- Core Setup & Routing & User Profiles ---
-        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), hostTimer = null, mState = 'idle', aTop = null;
+        // --- ADMIN CONFIGURATION ---
+        // Change this password to whatever you want. Keep it secret!
+        const ADMIN_PASS = "admin777"; 
+
+        // --- Core Setup & State ---
+        let mq = null;
+        let mId = 'u_' + Math.random().toString(36).substr(2, 8);
+        let hostTimer = null, presenceTimer = null, mState = 'idle', aTop = null;
         let playerName = localStorage.getItem('akshat_chess_user') || "";
-        let oppName = "Opponent";
-        
+        let playerRank = localStorage.getItem('akshat_chess_rank') || "";
+        let oppName = "Opponent", oppRank = "";
+        let livePlayers = {};
+
+        // Verify Ban status immediately
+        if (localStorage.getItem('akshat_chess_banned') === 'true') {
+            document.getElementById('ban-screen').style.display = 'flex';
+        }
+
         window.addEventListener('load', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const joinId = urlParams.get('join');
+
+            initNet();
 
             setTimeout(() => {
                 document.getElementById('splash-screen').style.opacity = '0';
@@ -349,7 +413,7 @@
                     if(playerName === "") {
                         document.getElementById('screen-login').classList.add('active');
                     } else {
-                        document.getElementById('welcome-text').innerText = "Welcome back, " + playerName + "!";
+                        updateWelcomeTag();
                         if(joinId) {
                             openLobby();
                             setTimeout(() => joinRoom(joinId), 1000);
@@ -361,12 +425,26 @@
             }, 1500);
         });
 
+        function getBadgeHTML(rank) {
+            if (!rank) return "";
+            if (rank === "DEV") return '<span class="badge badge-dev">👑 DEV</span>';
+            if (rank === "VIP") return '<span class="badge badge-vip">⭐ VIP</span>';
+            if (rank === "MOD") return '<span class="badge badge-mod">🛡️ MOD</span>';
+            if (rank === "MASTER") return '<span class="badge badge-master">🏆 MASTER</span>';
+            return `<span class="badge badge-vip">${rank}</span>`;
+        }
+
+        function updateWelcomeTag() {
+            let badge = getBadgeHTML(playerRank);
+            document.getElementById('welcome-text').innerHTML = `Welcome back, <strong>${playerName}</strong> ${badge}!`;
+        }
+
         function saveUsername() {
             let input = document.getElementById('username-input').value.trim();
             if(input.length >= 3) {
                 playerName = input;
                 localStorage.setItem('akshat_chess_user', playerName);
-                document.getElementById('welcome-text').innerText = "Welcome, " + playerName + "!";
+                updateWelcomeTag();
                 nav('screen-home');
             } else {
                 alert("Username must be at least 3 characters!");
@@ -382,6 +460,107 @@
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
         function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
+
+        // --- SECRET ADMIN TAP LOGIC ---
+        let adminTaps = 0;
+        let adminTimeout;
+        
+        function handleLogoTap() {
+            adminTaps++;
+            clearTimeout(adminTimeout);
+            
+            if(adminTaps >= 5) {
+                adminTaps = 0;
+                promptAdmin();
+            } else {
+                // If they stop tapping for 1 second, reset the counter
+                adminTimeout = setTimeout(() => { adminTaps = 0; }, 1000);
+            }
+        }
+
+        function promptAdmin() {
+            let entered = prompt("Enter Administrator Secret Key:");
+            if (entered === ADMIN_PASS) {
+                openAdmin();
+            } else if (entered !== null) {
+                alert("Access Denied: Incorrect Password.");
+            }
+        }
+
+        function openAdmin() {
+            document.getElementById('admin-modal').style.display = 'flex';
+            renderAdminDashboard();
+        }
+
+        function closeAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
+
+        // PC Shortcut as a backup: Ctrl + Shift + A 
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+                promptAdmin();
+            }
+        });
+
+        // --- Presence Heartbeat System ---
+        function sendPresence() {
+            if (mq && mq.connected) {
+                mq.publish('nx_presence_v1', JSON.stringify({
+                    id: mId,
+                    name: playerName || "Anonymous",
+                    rank: playerRank,
+                    state: mState,
+                    time: Date.now()
+                }));
+            }
+        }
+
+        function renderAdminDashboard() {
+            const now = Date.now();
+            const list = document.getElementById('admin-player-list');
+            let html = "";
+            let count = 0;
+
+            for (let id in livePlayers) {
+                if (now - livePlayers[id].time < 10000) {
+                    count++;
+                    const p = livePlayers[id];
+                    const isSelf = (id === mId) ? " (You)" : "";
+                    html += `
+                        <div class="player-row">
+                            <div class="info">
+                                <div><strong>${p.name}</strong>${isSelf} ${getBadgeHTML(p.rank)}</div>
+                                <div style="font-size: 0.75rem; color: #888;">ID: ${id} | Screen: <span style="color: var(--accent);">${p.state}</span></div>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-small" onclick="adminSetRank('${id}')">⭐ Rank</button>
+                                <button class="btn-small btn-danger" onclick="adminBan('${id}')">🔨 Ban</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            document.getElementById('admin-player-count').innerText = count;
+            list.innerHTML = count === 0 ? '<div style="text-align:center; color:#666; padding: 20px;">Scanning for active players...</div>' : html;
+        }
+
+        function adminBan(targetId) {
+            if (targetId === mId) { alert("You cannot ban yourself!"); return; }
+            if (confirm("Are you sure you want to permanently ban this player?")) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'ban', target: targetId, key: ADMIN_PASS }));
+                delete livePlayers[targetId];
+                renderAdminDashboard();
+            }
+        }
+
+        function adminSetRank(targetId) {
+            let rank = prompt("Enter Rank for player (e.g. VIP, MOD, DEV, MASTER):");
+            if (rank) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'rank', target: targetId, rank: rank.toUpperCase(), key: ADMIN_PASS }));
+                if (livePlayers[targetId]) livePlayers[targetId].rank = rank.toUpperCase();
+                renderAdminDashboard();
+            }
+        }
 
         // --- Audio & Voice Announcer System ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -421,7 +600,13 @@
             rg.appendChild(c);
         });
 
-        function nav(id) { $('.screen').removeClass('active'); $('#' + id).addClass('active'); if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); }
+        function nav(id) { 
+            $('.screen').removeClass('active'); 
+            $('#' + id).addClass('active'); 
+            mState = id.replace('screen-', '');
+            sendPresence();
+            if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
+        }
 
         // --- Stockfish AI ---
         let eng = null, thinking = false, hintReq = false;
@@ -449,8 +634,8 @@
 
         function initCPU(b) { 
             gMode = 'cpu'; aBot = b; 
-            oppName = b.name;
-            $('#opp-avatar').text(b.avatar); $('#opp-name').text(oppName); 
+            oppName = b.name; oppRank = "";
+            $('#opp-avatar').text(b.avatar); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
             startBrd('white'); setLog(`Match started vs ${oppName}`);
@@ -459,8 +644,8 @@
         
         function startLocalMatch() { 
             gMode = 'local'; 
-            oppName = "Player 2";
-            $('#opp-avatar').text('👥'); $('#opp-name').text(oppName); 
+            oppName = "Player 2"; oppRank = "";
+            $('#opp-avatar').text('👥'); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match</div>';
             startBrd('white'); setLog('Local Pass & Play started.'); 
@@ -481,7 +666,7 @@
 
         function startBrd(or) {
             gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
-            $('#plr-name').text(playerName);
+            $('#plr-name').html(playerName + ' ' + getBadgeHTML(playerRank));
             drawUI();
             selectedSq = null;
             
@@ -580,7 +765,7 @@
         }
 
         window.addEventListener('beforeunload', () => {
-            if (mState === 'play' && gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
+            if (mState === 'match' && gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
         });
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
@@ -629,24 +814,57 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // --- Custom Room Networking With Saved Usernames ---
+        // --- Custom Room Networking & Admin Protocols ---
         function initNet() {
             if(mq) return;
             mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-            mq.on('connect', () => mq.subscribe(`nx_inbox_${mId}`));
+            
+            mq.on('connect', () => {
+                mq.subscribe(`nx_inbox_${mId}`);
+                mq.subscribe('nx_presence_v1');
+                mq.subscribe('nx_admin_cmd');
+
+                clearInterval(presenceTimer);
+                presenceTimer = setInterval(sendPresence, 4000);
+                sendPresence();
+            });
+
             mq.on('message', (top, msg) => {
                 let d = JSON.parse(msg.toString());
                 
+                // 1. PRESENCE TRACKER
+                if (top === 'nx_presence_v1') {
+                    livePlayers[d.id] = { name: d.name, rank: d.rank, state: d.state, time: d.time || Date.now() };
+                    if ($('#admin-modal').is(':visible')) renderAdminDashboard();
+                }
+
+                // 2. ADMIN ENFORCEMENT COMMANDS
+                if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
+                    if (d.cmd === 'ban' && d.target === mId) {
+                        localStorage.setItem('akshat_chess_banned', 'true');
+                        document.getElementById('ban-screen').style.display = 'flex';
+                        if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
+                    }
+                    if (d.cmd === 'rank' && d.target === mId) {
+                        playerRank = d.rank;
+                        localStorage.setItem('akshat_chess_rank', playerRank);
+                        updateWelcomeTag();
+                        alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
+                    }
+                }
+
+                // 3. LOBBY BROWSING
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && mState === 'lobby') {
                         $('#room-list').find('.searching-msg').remove();
                         if($(`#rm_${d.id}`).length === 0) {
                             let displayName = d.n ? d.n : "Online Player";
+                            let badge = getBadgeHTML(d.r);
                             $('#room-list').append(`
                                 <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--accent);">
                                     <div class="pt-info">
                                         <span style="font-size:1.2rem;">🟢</span> 
-                                        <div class="pt-name">${displayName}'s Room</div>
+                                        <div class="pt-name">${displayName} ${badge}</div>
                                     </div>
                                     <button class="btn btn-primary" style="padding:8px 16px; font-size:0.9rem;" onclick="joinRoom('${d.id}')">Join</button>
                                 </div>
@@ -654,28 +872,36 @@
                         }
                     }
                     if(d.a === 'who' && mState === 'hosting') {
-                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName}));
+                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
                     }
                 }
 
+                // 4. INBOX INVITATIONS & HANDSHAKES
                 if(top === `nx_inbox_${mId}`) {
                     if(d.a === 'join' && mState === 'hosting') {
                         clearInterval(hostTimer);
-                        mState = 'play';
+                        mState = 'match';
                         aTop = `nx_rm_${mId}`; 
-                        oppName = d.n ? d.n : "Opponent"; // Save Guest Name
-                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName}));
+                        oppName = d.n ? d.n : "Opponent";
+                        oppRank = d.r || "";
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName, rk:playerRank}));
+                        $('#opp-avatar').text('🌐');
+                        $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('white'); 
                     }
                     if(d.a === 'start' && mState === 'joining') {
-                        mState = 'play'; 
+                        mState = 'match'; 
                         aTop = d.r; 
-                        oppName = d.n ? d.n : "Opponent"; // Save Host Name
+                        oppName = d.n ? d.n : "Opponent";
+                        oppRank = d.rk || "";
+                        $('#opp-avatar').text('🌐');
+                        $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('black'); 
                     }
                 }
 
-                if(top === aTop && mState === 'play') {
+                // 5. IN-MATCH SIGNALS
+                if(top === aTop && mState === 'match') {
                     if(d.t === 'm' && d.s !== mId) applyMv(d.f, d.to, d.p);
                     if(d.t === 'chat' && d.s !== mId) {
                         let safeMsg = document.createTextNode(d.msg).textContent;
@@ -716,7 +942,7 @@
 
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName}));
+                if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
             }, 1500);
         }
 
@@ -736,16 +962,14 @@
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName}));
+                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank}));
             }, 1000);
         }
 
         function joinNet(col) {
             mq.subscribe(aTop); gMode = 'net';
-            $('#opp-avatar').text('🌐'); 
-            $('#opp-name').text(oppName); 
             $('#btn-hint').hide();
-            document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">🔗 Connected to ${oppName}!</div>`;
+            document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">🔗 Connected to match!</div>`;
             startBrd(col); setLog('Match connected.');
         }
 
