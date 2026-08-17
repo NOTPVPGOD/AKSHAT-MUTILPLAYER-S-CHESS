@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Chess | Play Free Online</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #111111;
+            --surface: #1a1a1a;
+            --surface-hover: #222222;
+            --border: #333333;
+            --text-main: #f5f5f5;
+            --text-muted: #888888;
+            --primary: #ffffff;
+            --accent: #2563eb;
+            --accent-hover: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Typography & Header */
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        /* Buttons & Menus */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: var(--surface-hover);
+            border-color: #555;
+        }
+
+        .btn-primary {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #e5e5e5;
+            transform: translateY(-1px);
+        }
+
+        /* Matchmaking Loader */
+        .loader-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Opponent Roster */
+        .roster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .roster-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .roster-card:hover {
+            border-color: var(--text-muted);
+            background: var(--surface-hover);
+        }
+
+        .r-avatar { font-size: 2.5rem; margin-bottom: 10px; }
+        .r-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
+        .r-elo { color: var(--text-muted); font-size: 0.85rem; font-family: 'JetBrains Mono'; }
+
+        /* Game UI */
+        .match-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .board-column {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .board-layout { display: flex; gap: 12px; }
+
+        #board {
+            width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        /* Minimalist Board Colors */
+        .white-1e1d7 { background-color: #ebecd0 !important; }
+        .black-3c85d { background-color: #739552 !important; }
+        .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.5) !important; }
+        .highlight-last { background-color: rgba(255, 255, 51, 0.5) !important; }
+
+        /* Eval Bar */
+        .eval-container {
+            width: 16px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .eval-fill { background: #ffffff; width: 100%; height: 50%; transition: height 0.5s ease; }
+
+        /* Player Tags */
+        .player-tag {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .pt-info { display: flex; align-items: center; gap: 12px; }
+        .pt-name { font-weight: 600; font-size: 1rem; }
+        .pt-captures { font-size: 1rem; color: var(--text-muted); letter-spacing: 2px; }
+        .pt-clock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: #000;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Sidebar Log */
+        .sidebar-column {
+            flex: 1;
+            min-width: 280px;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .log-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-msg {
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            min-height: 40px;
+        }
+
+        .notation-history {
+            flex-grow: 1;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: grid;
+            grid-template-columns: 30px 1fr 1fr;
+            gap: 6px;
+            align-content: start;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .action-row button { flex: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN MENU -->
+    <div id="screen-home" class="screen active">
+        <div class="logo">♟️ Nexus Chess</div>
+        <div class="subtitle">Play, train, and analyze.</div>
+
+        <div class="menu-container">
+            <button class="btn btn-primary" onclick="startSearch()">Play Online</button>
+            <button class="btn" onclick="nav('screen-solo')">Practice vs Computer</button>
+            <button class="btn" onclick="startLocalMatch()">Pass & Play</button>
+        </div>
+    </div>
+
+    <!-- OPPONENT SELECT -->
+    <div id="screen-solo" class="screen">
+        <h2 style="margin-bottom: 24px; font-weight: 600;">Select Opponent</h2>
+        <div class="roster-grid" id="roster"></div>
+        <button class="btn" style="margin-top: 24px; width: 200px;" onclick="nav('screen-home')">Go Back</button>
+    </div>
+
+    <!-- MATCHMAKING -->
+    <div id="screen-queue" class="screen">
+        <div class="loader-container">
+            <div class="spinner"></div>
+            <h3 style="margin-bottom: 8px;">Finding Opponent</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Please wait while we connect you to a match...</p>
+            <button class="btn" style="width: 100%;" onclick="cancelSearch()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ACTIVE MATCH -->
+    <div id="screen-match" class="screen">
+        <div class="match-layout">
+            
+            <div class="board-column">
+                <div class="player-tag">
+                    <div class="pt-info">
+                        <span id="opp-avatar">👤</span>
+                        <div>
+                            <div class="pt-name" id="opp-name">Opponent</div>
+                            <div class="pt-captures" id="opp-cap"></div>
+                        </div>
+                    </div>
+                    <div class="pt-clock" id="opp-clock">10:00</div>
+                </div>
+
+                <div class="board-layout">
+                    <div class="eval-container"><div class="eval-fill" id="eval"></div></div>
+                    <div id="board"></div>
+                </div>
+
+                <div class="player-tag">
+                    <div class="pt-info">
+                        <span id="plr-avatar">👤</span>
+                        <div>
+                            <div class="pt-name" id="plr-name">You</div>
+                            <div class="pt-captures" id="plr-cap"></div>
+                        </div>
+                    </div>
+                    <div class="pt-clock" id="plr-clock">10:00</div>
+                </div>
+            </div>
+
+            <div class="sidebar-column">
+                <div class="log-box">
+                    <div class="status-msg" id="match-status">Match started. Good luck!</div>
+                    <div class="notation-history" id="notation"></div>
+                    <div class="action-row">
+                        <button class="btn" id="btn-hint" onclick="reqHint()">Hint</button>
+                        <button class="btn" onclick="quitMatch()" style="color: var(--danger);">Resign</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LIBRARIES -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(t) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            if (t === 'm') { o.frequency.setValueAtTime(300, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); o.start(); o.stop(audioCtx.currentTime + 0.08); }
+            if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(200, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
+        }
+
+        const ROSTER = [
+            { id: 'b1', name: 'Beginner', avatar: '🔰', rating: '400', lvl: 1, tm: 100 },
+            { id: 'b2', name: 'Intermediate', avatar: '⭐', rating: '1200', lvl: 5, tm: 200 },
+            { id: 'b3', name: 'Advanced', avatar: '🔥', rating: '1800', lvl: 10, tm: 350 },
+            { id: 'b4', name: 'Praggnanandhaa', avatar: '🇮🇳', rating: '2765', lvl: 15, tm: 450 },
+            { id: 'b5', name: 'Gukesh D', avatar: '🎯', rating: '2795', lvl: 18, tm: 550 },
+            { id: 'b6', name: 'Hikaru N.', avatar: '🚀', rating: '2875', lvl: 20, tm: 350 },
+            { id: 'b7', name: 'Magnus C.', avatar: '👑', rating: '2882', lvl: 20, tm: 600 }
+        ];
+
+        const rg = document.getElementById('roster');
+        ROSTER.forEach(b => {
+            const c = document.createElement('div');
+            c.className = 'roster-card';
+            c.onclick = () => initCPU(b);
+            c.innerHTML = `<div class="r-avatar">${b.avatar}</div><div class="r-name">${b.name}</div><div class="r-elo">Rating ${b.rating}</div>`;
+            rg.appendChild(c);
+        });
+
+        function nav(id) { $('.screen').removeClass('active'); $('#' + id).addClass('active'); if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); }
+
+        let eng = null, thinking = false, hintReq = false;
+        fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
+            eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
+            eng.onmessage = e => {
+                const m = e.data;
+                if(m.includes('score cp')) { let x = m.match(/score cp (-?\d+)/); if(x) setEval(parseInt(x[1])/100); }
+                if(m.startsWith('bestmove')) {
+                    const mv = m.split(' ')[1];
+                    if(hintReq) { showH(mv); hintReq = false; }
+                    else if(thinking) { applyMv(mv.substring(0,2), mv.substring(2,4), mv[4]||'q'); thinking = false; }
+                }
+            };
+            eng.postMessage('uci');
+        });
+
+        function askEng(lvl, tm) { if(gm.game_over()) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
+        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('Analyzing position...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
+        function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('Hint provided on board.'); } }
+
+        let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
+
+        function initCPU(b) { gMode = 'cpu'; aBot = b; $('#opp-avatar').text(b.avatar); $('#opp-name').text(b.name); $('#btn-hint').show(); startBrd('white'); setLog(`Match started vs ${b.name}`); }
+        function startLocalMatch() { gMode = 'local'; $('#opp-avatar').text('👤'); $('#opp-name').text('Player 2'); $('#btn-hint').show(); startBrd('white'); setLog('Local Pass & Play started.'); }
+
+        function startBrd(or) {
+            gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
+            drawUI();
+            brd = Chessboard('board', {
+                draggable: true, position: 'start', orientation: or,
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                onDragStart: (s,p) => {
+                    if(gm.game_over()||thinking) return false;
+                    if(gMode==='net'||gMode==='cpu') { if(myCol==='w'&&p.search(/^b/)!==-1) return false; if(myCol==='b'&&p.search(/^w/)!==-1) return false; if(gm.turn()!==myCol) return false; }
+                },
+                onDrop: (s,t) => {
+                    let m = gm.move({from:s,to:t,promotion:'q'});
+                    if(m===null) return 'snapback';
+                    playSfx(gm.get(t)?'c':'m'); finishMv(m);
+                    if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:s,to:t,p:'q',s:mId}));
+                },
+                onSnapEnd: () => brd.position(gm.fen())
+            });
+            nav('screen-match');
+        }
+
+        function applyMv(s, t, p) { let m = gm.move({from:s,to:t,promotion:p}); if(m) { brd.position(gm.fen()); playSfx(gm.get(t)?'c':'m'); finishMv(m); } }
+        
+        function finishMv(m) {
+            $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
+            drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
+            if(gm.game_over()) { clearInterval(tmr); setLog(gm.in_checkmate()?'Checkmate. Match Over.':'Draw.'); }
+            else { if(gm.in_check()) setLog('Check.'); else setLog(''); if(gMode==='cpu'&&gm.turn()!==myCol) setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250); }
+        }
+
+        function quitMatch() { clearInterval(tmr); if(gMode==='net') cancelSearch(); nav('screen-home'); }
+
+        function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
+        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('Time out. Match Over.');} }
+        function fmt(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
+        function drawClk() { $('#plr-clock').text(fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(fmt(myCol==='w'?tB:tW)); }
+        
+        function drawUI() {
+            drawClk();
+            let h = gm.history(), hl = ''; for(let i=0;i<h.length;i+=2) hl+=`<div>${(i/2)+1}.</div><div>${h[i]}</div><div>${h[i+1]||''}</div>`;
+            $('#notation').html(hl).scrollTop(9999);
+            
+            let f=gm.fen().split(' ')[0].replace(/[^a-zA-Z]/g,''), cW="", cB="";
+            for(let p of "pppppppprnbqkbnrPPPPPPPPRNBQKBNR") { if(f.includes(p)) f=f.replace(p,''); else { p===p.toLowerCase()?cW+=p:cB+=p; } }
+            const S={p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',P:'♟',N:'♞',B:'♝',R:'♜',Q:'♛'};
+            let rW = cW.split('').map(x=>S[x]).join(''), rB = cB.split('').map(x=>S[x]).join('');
+            myCol==='w' ? ($('#plr-cap').html(rW), $('#opp-cap').html(rB)) : ($('#plr-cap').html(rB), $('#opp-cap').html(rW));
+        }
+        function setLog(t) { if(t) $('#match-status').text(t); }
+
+        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), mInt = null, mState = 'idle', aTop = null;
+        function initNet() {
+            if(mq) return;
+            mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+            mq.on('connect', () => mq.subscribe(`nx_inbox_${mId}`));
+            mq.on('message', (top, msg) => {
+                let d = JSON.parse(msg.toString());
+                if(top==='nx_lobby' && mState==='src') {
+                    if(d.a==='find' && d.id!==mId) {
+                        mState='play'; clearInterval(mInt);
+                        aTop = `nx_rm_${d.id}_${mId}`;
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'match', r:aTop}));
+                        joinNet('black');
+                    }
+                }
+                if(top===`nx_inbox_${mId}` && d.a==='match' && mState==='src') {
+                    mState='play'; clearInterval(mInt); aTop=d.r; joinNet('white');
+                }
+                if(top===aTop && mState==='play' && d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
+            });
+        }
+        
+        function startSearch() {
+            mState = 'src'; nav('screen-queue'); if(!mq||!mq.connected) initNet();
+            setTimeout(() => {
+                mq.subscribe('nx_lobby');
+                clearInterval(mInt); mInt = setInterval(() => { if(mState==='src') mq.publish('nx_lobby', JSON.stringify({a:'find', id:mId})); }, 1500);
+            }, 500);
+        }
+
+        function joinNet(col) {
+            mq.subscribe(aTop); gMode = 'net';
+            $('#opp-avatar').text('🌐'); $('#opp-name').text('Opponent'); $('#btn-hint').hide();
+            startBrd(col); setLog('Match connected.');
+        }
+
+        function cancelSearch() { mState = 'idle'; clearInterval(mInt); if(mq) { mq.unsubscribe('nx_lobby'); if(aTop) mq.unsubscribe(aTop); } nav('screen-home'); }
+        window.addEventListener('resize', () => { if(brd) brd.resize(); });
+    </script>
+</body>
+</html>
