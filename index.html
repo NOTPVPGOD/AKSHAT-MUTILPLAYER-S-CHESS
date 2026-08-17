@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Chess | Play Free Online</title>
+    <title>Akshat's Multiplayer Chess Game | Play Free Online</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #111111;
-            --surface: #1a1a1a;
-            --surface-hover: #222222;
+            --bg-color: #0a0a0a;
+            --surface: #171717;
+            --surface-hover: #262626;
             --border: #333333;
             --text-main: #f5f5f5;
             --text-muted: #888888;
             --primary: #ffffff;
-            --accent: #2563eb;
-            --accent-hover: #3b82f6;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
             --danger: #ef4444;
             --success: #10b981;
+            --chat-you: #2563eb;
+            --chat-opp: #2a2a2a;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,284 +30,177 @@
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, transparent 70%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
+            overflow-x: hidden;
         }
 
-        .screen {
-            display: none;
-            width: 100%;
-            max-width: 1000px;
-            animation: fadeIn 0.4s ease forwards;
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed; inset: 0; background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
         }
+        .splash-title {
+            font-size: 3.5rem; font-weight: 900; letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #888888);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+        .splash-subtitle { color: var(--accent); margin-top: 10px; font-weight: 600; letter-spacing: 2px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        .screen { display: none; width: 100%; max-width: 1050px; animation: fadeIn 0.5s ease forwards; }
         .screen.active { display: flex; flex-direction: column; align-items: center; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Typography & Header */
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .logo { font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 5px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 40px; font-weight: 500; text-align: center; }
 
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1rem;
-            margin-bottom: 40px;
-            font-weight: 500;
-        }
+        /* Menus */
+        .menu-container { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 340px; }
+        .btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); padding: 16px 20px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; backdrop-filter: blur(10px); }
+        .btn:hover { background: rgba(255,255,255,0.1); border-color: #555; transform: translateY(-2px); }
+        .btn-primary { background: var(--text-main); color: var(--bg-color); border: none; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .btn-primary:hover { background: #e5e5e5; box-shadow: 0 0 30px rgba(255,255,255,0.4); }
 
-        /* Buttons & Menus */
-        .menu-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            max-width: 320px;
-        }
+        /* Settings Modal */
+        #settings-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .settings-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; width: 100%; max-width: 400px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        select { background: var(--bg-color); color: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; font-family: 'Inter'; outline: none; }
 
-        .btn {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 16px 20px;
-            border-radius: 8px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn:hover {
-            background: var(--surface-hover);
-            border-color: #555;
-        }
-
-        .btn-primary {
-            background: var(--text-main);
-            color: var(--bg-color);
-            border: none;
-        }
-
-        .btn-primary:hover {
-            background: #e5e5e5;
-            transform: translateY(-1px);
-        }
-
-        /* Matchmaking Loader */
-        .loader-container {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px auto;
-        }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Opponent Roster */
-        .roster-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        .roster-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .roster-card:hover {
-            border-color: var(--text-muted);
-            background: var(--surface-hover);
-        }
-
-        .r-avatar { font-size: 2.5rem; margin-bottom: 10px; }
-        .r-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
-        .r-elo { color: var(--text-muted); font-size: 0.85rem; font-family: 'JetBrains Mono'; }
+        /* Matchmaking & Roster */
+        .loader-container { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; text-align: center; max-width: 400px; width: 100%; }
+        .spinner { width: 45px; height: 45px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        
+        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; max-width: 850px; }
+        .roster-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .roster-card:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); transform: translateY(-4px); }
+        .r-avatar { font-size: 2.8rem; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
+        .r-name { font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; }
+        .r-elo { color: var(--accent); font-size: 0.9rem; font-family: 'JetBrains Mono'; font-weight: 600; }
 
         /* Game UI */
-        .match-layout {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 24px;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .board-column {
-            width: 100%;
-            max-width: 520px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
+        .match-layout { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
+        .board-column { width: 100%; max-width: 540px; display: flex; flex-direction: column; gap: 10px; }
         .board-layout { display: flex; gap: 12px; }
-
-        #board {
-            width: 100%;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        /* Minimalist Board Colors */
-        .white-1e1d7 { background-color: #ebecd0 !important; }
-        .black-3c85d { background-color: #739552 !important; }
-        .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.5) !important; }
-        .highlight-last { background-color: rgba(255, 255, 51, 0.5) !important; }
-
-        /* Eval Bar */
-        .eval-container {
-            width: 16px;
-            background: #2a2a2a;
-            border-radius: 4px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column-reverse;
-        }
-        .eval-fill { background: #ffffff; width: 100%; height: 50%; transition: height 0.5s ease; }
-
-        /* Player Tags */
-        .player-tag {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--surface);
-            padding: 12px 16px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-        }
-
-        .pt-info { display: flex; align-items: center; gap: 12px; }
-        .pt-name { font-weight: 600; font-size: 1rem; }
-        .pt-captures { font-size: 1rem; color: var(--text-muted); letter-spacing: 2px; }
-        .pt-clock {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            background: #000;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        /* Sidebar Log */
-        .sidebar-column {
-            flex: 1;
-            min-width: 280px;
-            max-width: 340px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .log-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 16px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .status-msg {
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            min-height: 40px;
-        }
-
-        .notation-history {
-            flex-grow: 1;
-            height: 200px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            display: grid;
-            grid-template-columns: 30px 1fr 1fr;
-            gap: 6px;
-            align-content: start;
-        }
-
-        .action-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
         
-        .action-row button { flex: 1; }
+        #board { width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        
+        /* Themes */
+        .theme-default .white-1e1d7 { background-color: #ebecd0 !important; } .theme-default .black-3c85d { background-color: #739552 !important; }
+        .theme-wood .white-1e1d7 { background-color: #f0d9b5 !important; } .theme-wood .black-3c85d { background-color: #b58863 !important; }
+        .theme-cyber .white-1e1d7 { background-color: #2b2b46 !important; } .theme-cyber .black-3c85d { background-color: #121224 !important; }
+        .theme-emerald .white-1e1d7 { background-color: #e0f2fe !important; } .theme-emerald .black-3c85d { background-color: #0284c7 !important; }
+        
+        .highlight-hint { box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.6) !important; }
+        .highlight-last { background-color: rgba(255, 255, 51, 0.4) !important; }
+
+        .eval-container { width: 18px; background: #222; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid var(--border); }
+        .eval-fill { background: #fff; width: 100%; height: 50%; transition: height 0.5s ease; }
+
+        .player-tag { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); }
+        .pt-info { display: flex; align-items: center; gap: 12px; }
+        .pt-name { font-weight: 700; font-size: 1.05rem; }
+        .pt-captures { font-size: 1.1rem; color: var(--text-muted); letter-spacing: 2px; }
+        .pt-clock { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; font-weight: 800; background: #000; padding: 4px 10px; border-radius: 6px; color: #fff; border: 1px solid #333; }
+
+        /* Sidebar, Chat & Notation */
+        .sidebar-column { flex: 1; min-width: 320px; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+        .log-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; max-height: 670px; }
+        
+        .status-msg { padding: 10px; margin-bottom: 10px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 0.95rem; font-weight: 600; text-align: center; }
+        
+        .notation-history { height: 90px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 35px 1fr 1fr; gap: 4px; align-content: start; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+
+        /* NEW CHAT BUBBLES UI */
+        .chat-display { flex-grow: 1; background: #000; border-radius: 8px; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); margin-bottom: 10px; min-height: 200px; }
+        .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
+        .chat-msg.you { align-self: flex-end; background: var(--chat-you); color: #fff; border-bottom-right-radius: 3px; }
+        .chat-msg.opp { align-self: flex-start; background: var(--chat-opp); color: var(--text-main); border-bottom-left-radius: 3px; border: 1px solid var(--border); }
+        .chat-msg.sys { align-self: center; background: transparent; color: var(--text-muted); font-size: 0.8rem; font-style: italic; text-align: center; }
+
+        .chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; max-height: 75px; overflow-y: auto; padding-right: 5px; }
+        .chat-chip { background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); font-size: 0.8rem; padding: 6px 10px; border-radius: 20px; cursor: pointer; transition: 0.15s; font-family: 'Inter'; }
+        .chat-chip:hover { background: #333; border-color: var(--accent); }
+
+        .custom-chat-row { display: flex; gap: 8px; }
+        .custom-chat-input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px 12px; border-radius: 8px; font-family: 'Inter'; font-size: 0.9rem; outline: none; }
+        .custom-chat-input:focus { border-color: var(--accent); }
+        .custom-chat-btn { background: var(--accent); border: none; color: white; padding: 0 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .custom-chat-btn:hover { background: var(--accent-hover); }
+
+        .action-row { display: flex; gap: 10px; margin-top: 10px; }
+        .action-row button { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; }
     </style>
 </head>
-<body>
+<body class="theme-default">
+
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen">
+        <div class="splash-title">♟️ AKSHAT'S CHESS</div>
+        <div class="splash-subtitle">LOADING...</div>
+    </div>
 
     <!-- MAIN MENU -->
-    <div id="screen-home" class="screen active">
-        <div class="logo">♟️ Nexus Chess</div>
-        <div class="subtitle">Play, train, and analyze.</div>
+    <div id="screen-home" class="screen">
+        <div class="logo">♟️ Akshat's Chess</div>
+        <div class="subtitle">The ultimate online chess experience.</div>
 
         <div class="menu-container">
-            <button class="btn btn-primary" onclick="startSearch()">Play Online</button>
-            <button class="btn" onclick="nav('screen-solo')">Practice vs Computer</button>
-            <button class="btn" onclick="startLocalMatch()">Pass & Play</button>
+            <button class="btn btn-primary" onclick="startSearch()">🌐 Play Online</button>
+            <button class="btn" onclick="nav('screen-solo')">🤖 Practice vs Computer</button>
+            <button class="btn" onclick="startLocalMatch()">👥 Pass & Play</button>
+            <button class="btn" onclick="openSettings()" style="margin-top: 10px; background: transparent;">⚙️ Settings</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal">
+        <div class="settings-box">
+            <h2 style="margin-bottom: 20px;">Settings</h2>
+            <div class="setting-row">
+                <label style="font-weight: 600;">Board Theme</label>
+                <select id="theme-select" onchange="changeTheme()">
+                    <option value="theme-default">Classic Minimal</option>
+                    <option value="theme-wood">Walnut Wood</option>
+                    <option value="theme-cyber">Cyberpunk Neon</option>
+                    <option value="theme-emerald">Emerald Green</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label style="font-weight: 600;">Sound Effects</label>
+                <select id="sound-select">
+                    <option value="on">Sound ON 🔊</option>
+                    <option value="off">Sound OFF 🔇</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
         </div>
     </div>
 
     <!-- OPPONENT SELECT -->
     <div id="screen-solo" class="screen">
-        <h2 style="margin-bottom: 24px; font-weight: 600;">Select Opponent</h2>
+        <h2 style="margin-bottom: 8px; font-weight: 800; font-size: 2.2rem;">Select Opponent</h2>
+        <p style="color: var(--text-muted); margin-bottom: 24px;">Train against the world's best engines.</p>
         <div class="roster-grid" id="roster"></div>
-        <button class="btn" style="margin-top: 24px; width: 200px;" onclick="nav('screen-home')">Go Back</button>
+        <button class="btn" style="margin-top: 30px; width: 220px;" onclick="nav('screen-home')">⬅ Back to Menu</button>
     </div>
 
     <!-- MATCHMAKING -->
     <div id="screen-queue" class="screen">
         <div class="loader-container">
             <div class="spinner"></div>
-            <h3 style="margin-bottom: 8px;">Finding Opponent</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Please wait while we connect you to a match...</p>
-            <button class="btn" style="width: 100%;" onclick="cancelSearch()">Cancel</button>
+            <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Finding Opponent</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px;">Connecting to global matchmaking server...</p>
+            <button class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="cancelSearch()">Cancel Search</button>
         </div>
     </div>
 
@@ -316,7 +211,7 @@
             <div class="board-column">
                 <div class="player-tag">
                     <div class="pt-info">
-                        <span id="opp-avatar">👤</span>
+                        <span id="opp-avatar" style="font-size: 1.5rem;">👤</span>
                         <div>
                             <div class="pt-name" id="opp-name">Opponent</div>
                             <div class="pt-captures" id="opp-cap"></div>
@@ -332,7 +227,7 @@
 
                 <div class="player-tag">
                     <div class="pt-info">
-                        <span id="plr-avatar">👤</span>
+                        <span id="plr-avatar" style="font-size: 1.5rem;">👤</span>
                         <div>
                             <div class="pt-name" id="plr-name">You</div>
                             <div class="pt-captures" id="plr-cap"></div>
@@ -345,10 +240,35 @@
             <div class="sidebar-column">
                 <div class="log-box">
                     <div class="status-msg" id="match-status">Match started. Good luck!</div>
+                    
                     <div class="notation-history" id="notation"></div>
+
+                    <!-- NEW CHAT UI -->
+                    <div class="chat-display" id="chat-display">
+                        <div class="chat-msg sys">Chat started. Be friendly!</div>
+                    </div>
+
+                    <div class="chat-chips">
+                        <button class="chat-chip" onclick="sendChat('Good luck!')">👋 Hi</button>
+                        <button class="chat-chip" onclick="sendChat('Nice move!')">🎯 Nice move</button>
+                        <button class="chat-chip" onclick="sendChat('Oops!')">😅 Oops</button>
+                        <button class="chat-chip" onclick="sendChat('🔥')">🔥</button>
+                        <button class="chat-chip" onclick="sendChat('🤯')">🤯</button>
+                        <button class="chat-chip" onclick="sendChat('💀')">💀</button>
+                        <button class="chat-chip" onclick="sendChat('🥶')">🥶</button>
+                        <button class="chat-chip" onclick="sendChat('🧠')">🧠</button>
+                        <button class="chat-chip" onclick="sendChat('😭')">😭</button>
+                        <button class="chat-chip" onclick="sendChat('Good game!')">🤝 GG</button>
+                    </div>
+
+                    <div class="custom-chat-row">
+                        <input type="text" id="chat-input" class="custom-chat-input" placeholder="Type message..." maxlength="60">
+                        <button class="custom-chat-btn" onclick="sendCustomChat()">Send</button>
+                    </div>
+
                     <div class="action-row">
-                        <button class="btn" id="btn-hint" onclick="reqHint()">Hint</button>
-                        <button class="btn" onclick="quitMatch()" style="color: var(--danger);">Resign</button>
+                        <button class="btn" id="btn-hint" onclick="reqHint()" style="border-color: var(--accent); color: var(--accent);">💡 Hint</button>
+                        <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.4); color: var(--danger);">🏳️ Resign</button>
                     </div>
                 </div>
             </div>
@@ -363,23 +283,42 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script>
+        // Splash Screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').style.opacity = '0';
+                setTimeout(() => { 
+                    document.getElementById('splash-screen').style.display = 'none'; 
+                    document.getElementById('screen-home').classList.add('active');
+                }, 800);
+            }, 1500);
+        });
+
+        // Settings
+        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+        function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
+
+        // Audio
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSfx(t) {
+            if(document.getElementById('sound-select').value === 'off') return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const o = audioCtx.createOscillator(), g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
-            if (t === 'm') { o.frequency.setValueAtTime(300, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); o.start(); o.stop(audioCtx.currentTime + 0.08); }
-            if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(200, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
+            if (t === 'm') { o.frequency.setValueAtTime(320, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08); g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); o.start(); o.stop(audioCtx.currentTime + 0.08); }
+            if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
         }
 
+        // Bot Profiles (Added Personality quotes)
         const ROSTER = [
-            { id: 'b1', name: 'Beginner', avatar: '🔰', rating: '400', lvl: 1, tm: 100 },
-            { id: 'b2', name: 'Intermediate', avatar: '⭐', rating: '1200', lvl: 5, tm: 200 },
-            { id: 'b3', name: 'Advanced', avatar: '🔥', rating: '1800', lvl: 10, tm: 350 },
-            { id: 'b4', name: 'Praggnanandhaa', avatar: '🇮🇳', rating: '2765', lvl: 15, tm: 450 },
-            { id: 'b5', name: 'Gukesh D', avatar: '🎯', rating: '2795', lvl: 18, tm: 550 },
-            { id: 'b6', name: 'Hikaru N.', avatar: '🚀', rating: '2875', lvl: 20, tm: 350 },
-            { id: 'b7', name: 'Magnus C.', avatar: '👑', rating: '2882', lvl: 20, tm: 600 }
+            { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "I'm just clicking buttons!"] },
+            { id: 'b2', name: 'Jimmy', avatar: '📗', rating: '900', lvl: 3, tm: 200, quotes: ["Control the center!", "Don't forget to develop your pieces.", "Always castle early."] },
+            { id: 'b3', name: 'Nelson', avatar: '⚡', rating: '1450', lvl: 7, tm: 350, quotes: ["Watch out for my Queen! 👑", "I play fast and aggressive.", "Did you see that attack?"] },
+            { id: 'b4', name: 'Praggnanandhaa', avatar: '🇮🇳', rating: '2765', lvl: 15, tm: 450, quotes: ["Tactics flow where pieces are active.", "I saw this combination 5 moves ago.", "Interesting line..."] },
+            { id: 'b5', name: 'Gukesh D', avatar: '🎯', rating: '2795', lvl: 18, tm: 550, quotes: ["I calculate every single defense.", "Precision is key here.", "Your position is slightly worse now."] },
+            { id: 'b6', name: 'Hikaru N.', avatar: '🚀', rating: '2875', lvl: 20, tm: 350, quotes: ["Takes, takes, takes... you're lost. 😂", "Chat, is this a blunder? 💀", "I'm just too fast bro. ⚡", "Juicer!"] },
+            { id: 'b7', name: 'Magnus C.', avatar: '👑', rating: '2882', lvl: 20, tm: 600, quotes: ["I'm grinding you down into the endgame.", "Too slow.", "Is that all you have? 🥱", "I guess I win."] }
         ];
 
         const rg = document.getElementById('roster');
@@ -387,12 +326,13 @@
             const c = document.createElement('div');
             c.className = 'roster-card';
             c.onclick = () => initCPU(b);
-            c.innerHTML = `<div class="r-avatar">${b.avatar}</div><div class="r-name">${b.name}</div><div class="r-elo">Rating ${b.rating}</div>`;
+            c.innerHTML = `<div class="r-avatar">${b.avatar}</div><div class="r-name">${b.name}</div><div class="r-elo">ELO ${b.rating}</div>`;
             rg.appendChild(c);
         });
 
         function nav(id) { $('.screen').removeClass('active'); $('#' + id).addClass('active'); if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); }
 
+        // AI Logic
         let eng = null, thinking = false, hintReq = false;
         fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
             eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
@@ -409,13 +349,29 @@
         });
 
         function askEng(lvl, tm) { if(gm.game_over()) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
-        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('Analyzing position...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
-        function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('Hint provided on board.'); } }
+        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating best move...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
+        function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Hint provided on board.'); } }
 
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
 
-        function initCPU(b) { gMode = 'cpu'; aBot = b; $('#opp-avatar').text(b.avatar); $('#opp-name').text(b.name); $('#btn-hint').show(); startBrd('white'); setLog(`Match started vs ${b.name}`); }
-        function startLocalMatch() { gMode = 'local'; $('#opp-avatar').text('👤'); $('#opp-name').text('Player 2'); $('#btn-hint').show(); startBrd('white'); setLog('Local Pass & Play started.'); }
+        function initCPU(b) { 
+            gMode = 'cpu'; aBot = b; 
+            $('#opp-avatar').text(b.avatar); $('#opp-name').text(b.name); 
+            $('#btn-hint').show(); 
+            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
+            startBrd('white'); setLog(`Match started vs ${b.name}`);
+            
+            // Bot says hello
+            setTimeout(() => { appendChat(b.quotes[0] || "Hello human!", 'opp'); }, 1000);
+        }
+        
+        function startLocalMatch() { 
+            gMode = 'local'; 
+            $('#opp-avatar').text('👥'); $('#opp-name').text('Player 2'); 
+            $('#btn-hint').show(); 
+            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match</div>';
+            startBrd('white'); setLog('Local Pass & Play started.'); 
+        }
 
         function startBrd(or) {
             gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
@@ -430,7 +386,11 @@
                 onDrop: (s,t) => {
                     let m = gm.move({from:s,to:t,promotion:'q'});
                     if(m===null) return 'snapback';
-                    playSfx(gm.get(t)?'c':'m'); finishMv(m);
+                    
+                    const isCap = gm.get(t) !== null;
+                    playSfx(isCap ? 'c' : 'm'); 
+                    finishMv(m, isCap);
+                    
                     if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:s,to:t,p:'q',s:mId}));
                 },
                 onSnapEnd: () => brd.position(gm.fen())
@@ -438,25 +398,59 @@
             nav('screen-match');
         }
 
-        function applyMv(s, t, p) { let m = gm.move({from:s,to:t,promotion:p}); if(m) { brd.position(gm.fen()); playSfx(gm.get(t)?'c':'m'); finishMv(m); } }
+        function applyMv(s, t, p) { 
+            const isCap = gm.get(t) !== null;
+            let m = gm.move({from:s,to:t,promotion:p}); 
+            if(m) { brd.position(gm.fen()); playSfx(isCap ? 'c' : 'm'); finishMv(m, isCap); } 
+        }
         
-        function finishMv(m) {
-            $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
-            drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
-            if(gm.game_over()) { clearInterval(tmr); setLog(gm.in_checkmate()?'Checkmate. Match Over.':'Draw.'); }
-            else { if(gm.in_check()) setLog('Check.'); else setLog(''); if(gMode==='cpu'&&gm.turn()!==myCol) setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250); }
+        // AI Personality Chat Trigger
+        function triggerBotChat(isCheck, isCapture) {
+            if(gMode !== 'cpu' || Math.random() > 0.4) return; // 40% chance to say something
+            
+            setTimeout(() => {
+                let msg = aBot.quotes[Math.floor(Math.random() * aBot.quotes.length)];
+                if(isCheck && Math.random() > 0.5) msg = "Watch your king! ⚠️";
+                if(isCapture && Math.random() > 0.5) msg = "Thanks for the material! 😋";
+                appendChat(msg, 'opp');
+            }, 800 + Math.random() * 1000);
         }
 
-        function quitMatch() { clearInterval(tmr); if(gMode==='net') cancelSearch(); nav('screen-home'); }
+        function finishMv(m, isCap) {
+            $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
+            drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
+            
+            const isCheck = gm.in_check();
+            
+            if(gm.game_over()) { 
+                clearInterval(tmr); setLog(gm.in_checkmate()?'🏆 Checkmate. Match Over.':'🤝 Match Drawn.'); 
+                if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
+            } else { 
+                if(isCheck) setLog('⚠️ Check!'); else setLog(''); 
+                
+                if(gMode==='cpu' && gm.turn()!==myCol) {
+                    setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250);
+                } else if (gMode==='cpu' && gm.turn()===myCol) {
+                    // Bot just moved, trigger chat
+                    triggerBotChat(isCheck, isCap);
+                }
+            }
+        }
+
+        function quitMatch() { 
+            if(confirm("Are you sure you want to resign and exit?")) {
+                clearInterval(tmr); if(gMode==='net') cancelSearch(); nav('screen-home'); 
+            }
+        }
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('Time out. Match Over.');} }
+        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time out. Match Over.');} }
         function fmt(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
         function drawClk() { $('#plr-clock').text(fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(fmt(myCol==='w'?tB:tW)); }
         
         function drawUI() {
             drawClk();
-            let h = gm.history(), hl = ''; for(let i=0;i<h.length;i+=2) hl+=`<div>${(i/2)+1}.</div><div>${h[i]}</div><div>${h[i+1]||''}</div>`;
+            let h = gm.history(), hl = ''; for(let i=0;i<h.length;i+=2) hl+=`<div style="color:#666">${(i/2)+1}.</div><div>${h[i]}</div><div>${h[i+1]||''}</div>`;
             $('#notation').html(hl).scrollTop(9999);
             
             let f=gm.fen().split(' ')[0].replace(/[^a-zA-Z]/g,''), cW="", cB="";
@@ -465,8 +459,39 @@
             let rW = cW.split('').map(x=>S[x]).join(''), rB = cB.split('').map(x=>S[x]).join('');
             myCol==='w' ? ($('#plr-cap').html(rW), $('#opp-cap').html(rB)) : ($('#plr-cap').html(rB), $('#opp-cap').html(rW));
         }
-        function setLog(t) { if(t) $('#match-status').text(t); }
+        function setLog(t) { if(t) $('#match-status').html(t); }
 
+        // NEW UI Chat System (Bubbles)
+        function appendChat(text, type) {
+            const chatBox = document.getElementById('chat-display');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-msg ${type}`;
+            msgDiv.innerText = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendChat(msg) {
+            appendChat(msg, 'you');
+            if(gMode === 'net' && mq && aTop) {
+                mq.publish(aTop, JSON.stringify({ t: 'chat', msg: msg, s: mId }));
+            } else if (gMode === 'cpu') {
+                // Bots sometimes reply when you talk to them!
+                if(Math.random() > 0.5) setTimeout(() => { appendChat("🤔 I am calculating...", 'opp'); }, 1000);
+            }
+        }
+        
+        function sendCustomChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if(msg) { sendChat(msg); input.value = ''; }
+        }
+
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendCustomChat();
+        });
+
+        // Networking
         let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), mInt = null, mState = 'idle', aTop = null;
         function initNet() {
             if(mq) return;
@@ -485,7 +510,13 @@
                 if(top===`nx_inbox_${mId}` && d.a==='match' && mState==='src') {
                     mState='play'; clearInterval(mInt); aTop=d.r; joinNet('white');
                 }
-                if(top===aTop && mState==='play' && d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
+                if(top===aTop && mState==='play') {
+                    if(d.t==='m' && d.s!==mId) applyMv(d.f, d.to, d.p);
+                    if(d.t==='chat' && d.s!==mId) {
+                        let safeMsg = document.createTextNode(d.msg).textContent; // HTML Sanitization
+                        appendChat(safeMsg, 'opp');
+                    }
+                }
             });
         }
         
@@ -499,7 +530,9 @@
 
         function joinNet(col) {
             mq.subscribe(aTop); gMode = 'net';
-            $('#opp-avatar').text('🌐'); $('#opp-name').text('Opponent'); $('#btn-hint').hide();
+            $('#opp-avatar').text('🌐'); $('#opp-name').text('Online Player'); $('#btn-hint').hide();
+            
+            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">🔗 Connected to global opponent!</div>';
             startBrd(col); setLog('Match connected.');
         }
 
