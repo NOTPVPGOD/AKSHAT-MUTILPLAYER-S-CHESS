@@ -1,4 +1,4 @@
-       <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta name="google-site-verification" content="dF-bCP0mGJ_CmMYT4IuRVNIFDSJqzaY26YTx6CpzPXg" />
@@ -196,7 +196,7 @@
                 </select>
             </div>
             <div class="setting-row">
-                <label style="font-weight: 600;">Sound Effects</label>
+                <label style="font-weight: 600;">Sound & Voice</label>
                 <select id="sound-select">
                     <option value="on">Sound ON 🔊</option>
                     <option value="off">Sound OFF 🔇</option>
@@ -214,7 +214,7 @@
         <button class="btn" style="margin-top: 30px; width: 220px;" onclick="nav('screen-home')">⬅ Back to Menu</button>
     </div>
 
-    <!-- NEW ONLINE LOBBY SYSTEM -->
+    <!-- ONLINE LOBBY SYSTEM -->
     <div id="screen-lobby" class="screen">
         <h2 style="margin-bottom: 20px; font-size: 2.2rem;">Multiplayer Lobby</h2>
         
@@ -229,10 +229,20 @@
             <button class="btn" style="width: 100%; margin-top: 25px;" onclick="cancelSearch()">⬅ Back to Menu</button>
         </div>
 
-        <div id="host-ui" style="display: none;" class="loader-container">
+        <div id="host-ui" style="display: none; max-width: 450px;" class="loader-container">
             <div class="spinner"></div>
             <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Hosting Match</h3>
-            <p id="host-msg" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px;">Waiting for a player to join your room...</p>
+            <p id="host-msg" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Waiting for a player to join...</p>
+            
+            <!-- Invite Link Section -->
+            <div style="background: #000; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 25px; text-align: left;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;">INVITE A FRIEND DIRECTLY:</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="invite-link" readonly style="flex: 1; background: transparent; border: none; color: var(--accent); font-size: 0.75rem; outline: none; font-family: monospace;">
+                    <button onclick="copyInvite()" style="background: var(--surface-hover); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">COPY</button>
+                </div>
+            </div>
+
             <button class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="cancelSearch()">Cancel Match</button>
         </div>
     </div>
@@ -315,24 +325,36 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script>
-        // Splash Screen
+        // --- Core Setup & Routing ---
+        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), hostTimer = null, mState = 'idle', aTop = null;
+        
         window.addEventListener('load', () => {
+            // Check for direct friend invite link
+            const urlParams = new URLSearchParams(window.location.search);
+            const joinId = urlParams.get('join');
+
             setTimeout(() => {
                 document.getElementById('splash-screen').style.opacity = '0';
                 setTimeout(() => { 
                     document.getElementById('splash-screen').style.display = 'none'; 
-                    document.getElementById('screen-home').classList.add('active');
+                    
+                    if(joinId) {
+                        openLobby();
+                        setTimeout(() => joinRoom(joinId), 1000); // Wait for MQTT to connect, then join
+                    } else {
+                        document.getElementById('screen-home').classList.add('active');
+                    }
                 }, 800);
             }, 1500);
         });
 
-        // Settings
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
         function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
 
-        // Audio
+        // --- Audio & Voice Announcer System ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
         function playSfx(t) {
             if(document.getElementById('sound-select').value === 'off') return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -342,7 +364,15 @@
             if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); o.start(); o.stop(audioCtx.currentTime + 0.12); }
         }
 
-        // Bot Profiles 
+        function speak(text) {
+            if(document.getElementById('sound-select').value === 'off') return;
+            let msg = new SpeechSynthesisUtterance(text);
+            msg.rate = 1.1; // Slightly faster reading
+            msg.pitch = 0.9;
+            window.speechSynthesis.speak(msg);
+        }
+
+        // --- Bot Profiles ---
         const ROSTER = [
             { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "I'm just clicking buttons!"] },
             { id: 'b2', name: 'Jimmy', avatar: '📗', rating: '900', lvl: 3, tm: 200, quotes: ["Control the center!", "Don't forget to develop your pieces.", "Always castle early."] },
@@ -364,7 +394,7 @@
 
         function nav(id) { $('.screen').removeClass('active'); $('#' + id).addClass('active'); if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); }
 
-        // AI Logic
+        // --- Stockfish AI ---
         let eng = null, thinking = false, hintReq = false;
         fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
             eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
@@ -384,6 +414,7 @@
         function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating best move...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
         function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Hint provided on board.'); } }
 
+        // --- Board Logic ---
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
         let selectedSq = null; 
 
@@ -511,11 +542,24 @@
             drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
             
             const isCheck = gm.in_check();
+            
             if(gm.game_over()) { 
-                clearInterval(tmr); setLog(gm.in_checkmate()?'🏆 Checkmate. Match Over.':'🤝 Match Drawn.'); 
+                clearInterval(tmr); 
+                if(gm.in_checkmate()) {
+                    setLog('🏆 Checkmate. Match Over.');
+                    speak("Checkmate!");
+                } else {
+                    setLog('🤝 Match Drawn.');
+                }
                 if(gMode === 'cpu') setTimeout(()=> appendChat("Good game! Play me again.", 'opp'), 1000);
             } else { 
-                if(isCheck) setLog('⚠️ Check!'); else setLog(''); 
+                if(isCheck) {
+                    setLog('⚠️ Check!'); 
+                    speak("Check.");
+                } else {
+                    setLog(''); 
+                }
+                
                 if(gMode==='cpu' && gm.turn()!==myCol) {
                     setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250);
                 } else if (gMode==='cpu' && gm.turn()===myCol) {
@@ -524,11 +568,25 @@
             }
         }
 
+        // --- DISCONNECT / RESIGN SYSTEM ---
         function quitMatch() { 
             if(confirm("Are you sure you want to resign and exit?")) {
-                clearInterval(tmr); if(gMode==='net') cancelSearch(); nav('screen-home'); 
+                if(gMode === 'net' && mq && aTop) {
+                    // Tell opponent you left so they win!
+                    mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
+                }
+                clearInterval(tmr); 
+                if(gMode==='net') cancelSearch(); 
+                nav('screen-home'); 
             }
         }
+
+        // Catch if they close the browser tab
+        window.addEventListener('beforeunload', () => {
+            if (mState === 'play' && gMode === 'net' && mq && aTop) {
+                mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
+            }
+        });
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
         function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time out. Match Over.');} }
@@ -576,9 +634,7 @@
             if (e.key === 'Enter') sendCustomChat();
         });
 
-        // --- NEW CUSTOM ROOM NETWORKING ---
-        let mq = null, mId = 'u_'+Math.random().toString(36).substr(2,8), hostTimer = null, mState = 'idle', aTop = null;
-        
+        // --- Custom Room Networking ---
         function initNet() {
             if(mq) return;
             mq = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
@@ -586,7 +642,6 @@
             mq.on('message', (top, msg) => {
                 let d = JSON.parse(msg.toString());
                 
-                // LOBBY LOGIC
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && mState === 'lobby') {
                         $('#room-list').find('.searching-msg').remove();
@@ -607,36 +662,40 @@
                     }
                 }
 
-                // INBOX LOGIC
                 if(top === `nx_inbox_${mId}`) {
                     if(d.a === 'join' && mState === 'hosting') {
                         clearInterval(hostTimer);
                         mState = 'play';
-                        aTop = `nx_rm_${mId}`; // Room is named after the host
+                        aTop = `nx_rm_${mId}`; 
                         mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop}));
-                        joinNet('white'); // Host gets White
+                        joinNet('white'); 
                     }
                     if(d.a === 'start' && mState === 'joining') {
                         mState = 'play'; 
                         aTop = d.r; 
-                        joinNet('black'); // Joiner gets Black
+                        joinNet('black'); 
                     }
                 }
 
-                // IN-GAME LOGIC
                 if(top === aTop && mState === 'play') {
                     if(d.t === 'm' && d.s !== mId) applyMv(d.f, d.to, d.p);
                     if(d.t === 'chat' && d.s !== mId) {
                         let safeMsg = document.createTextNode(d.msg).textContent;
                         appendChat(safeMsg, 'opp');
                     }
+                    if(d.t === 'resign' && d.s !== mId) {
+                        clearInterval(tmr);
+                        setLog('🏆 Opponent disconnected. You win!');
+                        appendChat("Opponent left the match. You win!", 'sys');
+                        speak("Opponent disconnected. You win.");
+                        $('#btn-hint').hide(); // disable further play
+                    }
                 }
             });
         }
 
-        // Open the Lobby Screen
         function openLobby() {
-            mState = 'lobby'; nav('screen-lobby');
+            nav('screen-lobby'); mState = 'lobby';
             $('#lobby-ui').show(); $('#host-ui').hide(); 
             $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#666; margin-top:20px;">Searching for rooms...</div>');
             
@@ -647,25 +706,41 @@
             }, 500);
         }
 
-        // Host clicks "Host a Match"
         function hostMatch() {
             mState = 'hosting';
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Waiting for a player to join your room...");
             $('#room-list').empty(); 
             
+            // Build the Friend Invite Link
+            let baseURL = window.location.href.split('?')[0];
+            let inviteLink = baseURL + "?join=" + mId;
+            document.getElementById('invite-link').value = inviteLink;
+
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
                 if(mState === 'hosting') mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId}));
             }, 1500);
         }
 
-        // Guest clicks "Join"
+        function copyInvite() {
+            let copyText = document.getElementById("invite-link");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // For mobile devices
+            navigator.clipboard.writeText(copyText.value);
+            alert("Invite link copied! Send it to your friend.");
+        }
+
         function joinRoom(hostId) {
+            if(!mq || !mq.connected) initNet(); 
             mState = 'joining'; 
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Connecting to room...");
-            mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId}));
+            
+            clearInterval(hostTimer);
+            hostTimer = setInterval(() => {
+                if(mState === 'joining') mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId}));
+            }, 1000);
         }
 
         function joinNet(col) {
@@ -679,6 +754,9 @@
             mState = 'idle'; 
             clearInterval(hostTimer); 
             if(mq) { mq.unsubscribe('nx_lobby_v3'); if(aTop) mq.unsubscribe(aTop); } 
+            
+            // Remove ?join URL param if they cancel
+            window.history.replaceState({}, document.title, window.location.pathname);
             nav('screen-home'); 
         }
 
@@ -686,4 +764,3 @@
     </script>
 </body>
 </html>
-                       
