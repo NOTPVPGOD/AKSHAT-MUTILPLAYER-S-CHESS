@@ -445,7 +445,7 @@
                 <div class="r-elo">ELO 3200 (UNDEFEATED)</div>
             </div>
         </div>
-        <button class="btn" style="margin-top: 25px; width: 200px;" onclick="returnToHome()">⬅ Back to Menu</button>
+        <button class="btn" style="margin-top: 25px; width: 200px;" onclick="window.nav('screen-home')">⬅ Back to Menu</button>
     </div>
 
     <!-- MATCHMAKING SEARCHING OVERLAY -->
@@ -454,7 +454,7 @@
             <div class="spinner"></div>
             <h3 style="margin-bottom: 8px; font-size: 1.35rem;">Matchmaking...</h3>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;">Looking for an opponent in the background.</p>
-            <button class="btn btn-danger" style="width: 100%;" onclick="returnToHome()">Cancel Search</button>
+            <button class="btn btn-danger" style="width: 100%;" onclick="window.nav('screen-home')">Cancel Search</button>
         </div>
     </div>
 
@@ -471,7 +471,7 @@
             <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;">Available Rooms</h3>
             <div id="room-list" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; min-height: 160px;"></div>
             
-            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="returnToHome()">⬅ Back to Menu</button>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="window.nav('screen-home')">⬅ Back to Menu</button>
         </div>
 
         <div id="host-ui" style="display: none; max-width: 420px;" class="loader-container">
@@ -487,7 +487,7 @@
                 </div>
             </div>
 
-            <button class="btn" style="width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" onclick="returnToHome()">Cancel Match</button>
+            <button class="btn" style="width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" onclick="window.nav('screen-home')">Cancel Match</button>
         </div>
     </div>
 
@@ -562,122 +562,43 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-    <!-- SERVER INTEGRATION -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
-            authDomain: "akshat-chess.firebaseapp.com",
-            projectId: "akshat-chess",
-            storageBucket: "akshat-chess.firebasestorage.app",
-            messagingSenderId: "821222063303",
-            appId: "1:821222063303:web:79945a324b70b0eed592e2"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        window.fbAuth = auth;
-        window.fbDb = db;
-
-        window.saveUsername = async () => {
-            const uInput = document.getElementById('username-input').value.trim();
-            const pInput = document.getElementById('password-input').value.trim();
-            const msg = document.getElementById('auth-msg');
-            
-            if(uInput.length < 3 || pInput.length < 6) {
-                msg.innerText = "Username 3+ chars, Password 6+ chars.";
-                return;
-            }
-
-            msg.innerText = "Connecting to server...";
-            const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
-
-            try {
-                await signInWithEmailAndPassword(auth, fakeEmail, pInput);
-                msg.innerText = "Logged in successfully!";
-            } catch (error) {
-                try {
-                    const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
-                    await setDoc(doc(db, "users", userCred.user.uid), {
-                        username: uInput,
-                        avatar: window.selectedAvatarIcon || "😎",
-                        elo: 1200,
-                        rank: "",
-                        isBanned: false
-                    });
-                    msg.innerText = "Account created!";
-                } catch(regErr) {
-                    msg.innerText = "Error: Invalid credentials or name taken.";
-                }
-            }
-        };
-
-        window.logOut = () => {
-            signOut(auth).then(() => {
-                window.playerName = "";
-                window.playerRank = "";
-                nav('screen-login');
-                closeSettings();
-            });
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const docSnap = await getDoc(doc(db, "users", user.uid));
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        
-                        if(data.isBanned) {
-                            document.getElementById('ban-screen').style.display = 'flex';
-                            signOut(auth);
-                            return;
-                        }
-
-                        window.playerName = data.username || "Player";
-                        window.playerRank = data.rank || "";
-                        window.playerAvatar = data.avatar || "😎";
-                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
-
-                        updateWelcomeTag();
-                        
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const joinId = urlParams.get('join');
-                        if(joinId) {
-                            openLobby();
-                            setTimeout(() => joinRoom(joinId), 1000);
-                        } else {
-                            nav('screen-home');
-                        }
-                    } else {
-                        // CRITICAL FIX: Ghost session detected. Clear the session and force login.
-                        await signOut(auth);
-                        nav('screen-login');
-                    }
-                } catch (err) {
-                    console.log("Server connection error.");
-                    nav('screen-login');
-                }
-            } else {
-                nav('screen-login');
-            }
-        });
-    </script>
-
+    <!-- CHESS ENGINE & GAME LOGIC -->
     <script>
         /* =========================================
            AVATAR SELECTION
         ========================================= */
-        let selectedAvatarIcon = "😎";
+        window.selectedAvatarIcon = "😎";
         function selectAvatar(icon, el) {
-            selectedAvatarIcon = icon;
+            window.selectedAvatarIcon = icon;
             document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
             el.classList.add('selected');
+        }
+
+        /* =========================================
+           ROUTER & NAVIGATION (Globally Scoped!)
+        ========================================= */
+        window.nav = function(id) { 
+            $('.screen').removeClass('active'); 
+            $('#' + id).addClass('active'); 
+            
+            if(id === 'screen-home') currentActivity = "Main Menu";
+            if(id === 'screen-solo') currentActivity = "Selecting AI Opponent";
+            
+            sendPresence();
+            if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
+        }
+
+        window.updateWelcomeTag = function() {
+            function getBadgeHTML(rank) {
+                if (!rank) return "";
+                if (rank === "DEV") return '<span class="badge badge-dev">👑 DEV</span>';
+                if (rank === "VIP") return '<span class="badge badge-vip">⭐ VIP</span>';
+                if (rank === "MOD") return '<span class="badge badge-mod">🛡️ MOD</span>';
+                if (rank === "MASTER") return '<span class="badge badge-master">🏆 MASTER</span>';
+                return `<span class="badge badge-vip">${rank}</span>`;
+            }
+            let badge = getBadgeHTML(window.playerRank);
+            document.getElementById('welcome-text').innerHTML = `Connected as <strong>${window.playerName}</strong> ${badge}`;
         }
 
         /* =========================================
@@ -713,7 +634,7 @@
            MATCHMAKING QUEUES
         ========================================= */
         function findMatch(minutes) {
-            nav('screen-searching');
+            window.nav('screen-searching');
             setTimeout(() => {
                 oppName = "RandomPlayer" + Math.floor(Math.random() * 100);
                 oppRank = "";
@@ -752,7 +673,7 @@
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, aTop = null;
         
-        window.playerName = "";
+        window.playerName = "Player";
         window.playerRank = "";
         
         let oppName = "Opponent", oppRank = "";
@@ -778,38 +699,23 @@
                         if(splash) splash.style.display = 'none'; 
                         
                         // CRITICAL BLACK SCREEN FAILSAFE:
-                        // If no screen has loaded by the time the animation finishes, force the login screen.
                         if (document.querySelectorAll('.screen.active').length === 0) {
-                            nav('screen-login');
+                            window.nav('screen-login');
                         }
                     }, 800);
                 }, 1100);
             }, 300);
         });
 
-        function getBadgeHTML(rank) {
-            if (!rank) return "";
-            if (rank === "DEV") return '<span class="badge badge-dev">👑 DEV</span>';
-            if (rank === "VIP") return '<span class="badge badge-vip">⭐ VIP</span>';
-            if (rank === "MOD") return '<span class="badge badge-mod">🛡️ MOD</span>';
-            if (rank === "MASTER") return '<span class="badge badge-master">🏆 MASTER</span>';
-            return `<span class="badge badge-vip">${rank}</span>`;
-        }
-
-        function updateWelcomeTag() {
-            let badge = getBadgeHTML(playerRank);
-            document.getElementById('welcome-text').innerHTML = `Connected as <strong>${playerName}</strong> ${badge}`;
-        }
-
         /* =========================================
            MODAL TOGGLES
         ========================================= */
-        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
-        function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
-        function openHowToPlay() { document.getElementById('howto-modal').style.display = 'flex'; }
-        function closeHowToPlay() { document.getElementById('howto-modal').style.display = 'none'; }
-        function closeAnnouncement() { document.getElementById('announcement-overlay').style.display = 'none'; }
+        window.openSettings = function() { document.getElementById('settings-modal').style.display = 'flex'; }
+        window.closeSettings = function() { document.getElementById('settings-modal').style.display = 'none'; }
+        window.changeTheme = function() { document.body.className = document.getElementById('theme-select').value; }
+        window.openHowToPlay = function() { document.getElementById('howto-modal').style.display = 'flex'; }
+        window.closeHowToPlay = function() { document.getElementById('howto-modal').style.display = 'none'; }
+        window.closeAnnouncement = function() { document.getElementById('announcement-overlay').style.display = 'none'; }
 
         /* =========================================
            SECRET ADMIN TAP PROTOCOL
@@ -891,10 +797,13 @@
                     count++;
                     const p = livePlayers[id];
                     const isSelf = (id === mId) ? " (You)" : "";
+                    
+                    let bBadge = p.rank ? `<span class="badge badge-vip">${p.rank}</span>` : "";
+
                     html += `
                         <div class="player-row">
                             <div class="info">
-                                <div><strong>${p.name}</strong>${isSelf} ${getBadgeHTML(p.rank)}</div>
+                                <div><strong>${p.name}</strong>${isSelf} ${bBadge}</div>
                                 <div style="font-size: 0.75rem; color: #9ca3af;">State: <strong style="color: var(--gold);">${p.activity}</strong></div>
                                 <div style="font-size: 0.65rem; color: #4b5563;">ID: ${id}</div>
                             </div>
@@ -1012,45 +921,6 @@
         }
 
         /* =========================================
-           ROUTER & NAVIGATION
-        ========================================= */
-        function nav(id) { 
-            $('.screen').removeClass('active'); 
-            $('#' + id).addClass('active'); 
-            
-            if(id === 'screen-home') currentActivity = "Main Menu";
-            if(id === 'screen-solo') currentActivity = "Selecting AI Opponent";
-            
-            sendPresence();
-            if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
-        }
-
-        function returnToHome() {
-            currentActivity = "Main Menu";
-            clearInterval(hostTimer);
-            if(mq) {
-                try { mq.unsubscribe('nx_lobby_v3'); } catch(e){}
-                if(aTop) { try { mq.unsubscribe(aTop); } catch(e){} }
-            }
-            try {
-                let currentUrl = window.location.href;
-                if (currentUrl.includes('?join=')) {
-                    let cleanUrl = currentUrl.split('?')[0];
-                    window.history.replaceState({}, document.title, cleanUrl);
-                }
-            } catch (err) {}
-            nav('screen-home');
-        }
-
-        function sendPresence() {
-            if (mq && mq.connected) {
-                mq.publish('nx_presence_v1', JSON.stringify({
-                    id: mId, name: window.playerName || "Anonymous", rank: window.playerRank, activity: currentActivity, time: Date.now()
-                }));
-            }
-        }
-
-        /* =========================================
            STOCKFISH AI WORKER
         ========================================= */
         let eng = null, thinking = false, hintReq = false;
@@ -1120,7 +990,16 @@
             
             myCol = or[0]; tW = timeSeconds; tB = timeSeconds; 
             clearInterval(tmr); tmr = setInterval(tick, 1000);
-            $('#plr-name').html(window.playerName + ' ' + getBadgeHTML(window.playerRank));
+            
+            // Failsafe for badge rendering
+            let bHTML = "";
+            if (window.playerRank === "DEV") bHTML = '<span class="badge badge-dev">👑 DEV</span>';
+            else if (window.playerRank === "VIP") bHTML = '<span class="badge badge-vip">⭐ VIP</span>';
+            else if (window.playerRank === "MOD") bHTML = '<span class="badge badge-mod">🛡️ MOD</span>';
+            else if (window.playerRank === "MASTER") bHTML = '<span class="badge badge-master">🏆 MASTER</span>';
+            else if (window.playerRank) bHTML = `<span class="badge badge-vip">${window.playerRank}</span>`;
+
+            $('#plr-name').html(window.playerName + ' ' + bHTML);
             drawUI();
             selectedSq = null;
             sendPresence(); 
@@ -1150,7 +1029,7 @@
                 },
                 onSnapEnd: () => brd.position(gm.fen())
             });
-            nav('screen-match');
+            window.nav('screen-match');
         }
 
         $(document).on('click', '#board .square-55d63', function() {
@@ -1327,7 +1206,7 @@
                                 module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { rank: d.rank });
                             });
                         }
-                        updateWelcomeTag();
+                        window.updateWelcomeTag();
                         alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
                     }
                 }
@@ -1336,15 +1215,24 @@
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
                         $('#room-list').find('.searching-msg').remove();
                         if($(`#rm_${d.id}`).length === 0) {
+                            
+                            // Prevent badge error
+                            let hBadge = "";
+                            if (d.r === "DEV") hBadge = '<span class="badge badge-dev">👑 DEV</span>';
+                            else if (d.r === "VIP") hBadge = '<span class="badge badge-vip">⭐ VIP</span>';
+                            else if (d.r === "MOD") hBadge = '<span class="badge badge-mod">🛡️ MOD</span>';
+                            else if (d.r === "MASTER") hBadge = '<span class="badge badge-master">🏆 MASTER</span>';
+                            else if (d.r) hBadge = `<span class="badge badge-vip">${d.r}</span>`;
+
                             let displayName = d.n ? d.n : "Online Player";
-                            let badge = getBadgeHTML(d.r);
+
                             $('#room-list').append(`
                                 <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--border-glow);">
                                     <div class="pt-info">
                                         <span style="font-size:1rem;">🔒</span> 
-                                        <div class="pt-name">${displayName} ${badge}</div>
+                                        <div class="pt-name">${displayName} ${hBadge}</div>
                                     </div>
-                                    <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="joinRoom('${d.id}')">Connect</button>
+                                    <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="window.joinRoom('${d.id}')">Connect</button>
                                 </div>
                             `);
                         }
@@ -1369,7 +1257,7 @@
                         currentActivity = "Online Match vs " + oppName;
                         mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:window.playerName, rk:window.playerRank}));
                         $('#opp-avatar').text('🌐');
-                        $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
+                        $('#opp-name').html(oppName + ' ' + (oppRank ? `<span class="badge badge-vip">${oppRank}</span>` : ''));
                         joinNet('white'); 
                     }
                     if(d.a === 'rejected') {
@@ -1382,7 +1270,7 @@
                         oppRank = d.rk || "";
                         currentActivity = "Online Match vs " + oppName;
                         $('#opp-avatar').text('🌐');
-                        $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
+                        $('#opp-name').html(oppName + ' ' + (oppRank ? `<span class="badge badge-vip">${oppRank}</span>` : ''));
                         joinNet('black'); 
                     }
                 }
@@ -1407,8 +1295,8 @@
             });
         }
 
-        function openLobby() {
-            nav('screen-lobby'); 
+        window.openLobby = function() {
+            window.nav('screen-lobby'); 
             currentActivity = "Browsing Lobby";
             $('#lobby-ui').show(); $('#host-ui').hide(); 
             $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#6b7280; padding:20px; font-size:0.85rem;">Scanning for active rooms...</div>');
@@ -1420,7 +1308,7 @@
             }, 500);
         }
 
-        function hostMatch() {
+        window.hostMatch = function() {
             currentActivity = "Hosting a Match Room";
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Waiting for a player to join...");
@@ -1436,14 +1324,14 @@
             }, 1500);
         }
 
-        function copyInvite() {
+        window.copyInvite = function() {
             let copyText = document.getElementById("invite-link");
             copyText.select();
             navigator.clipboard.writeText(copyText.value);
             alert("Invite link copied! Send it to your friend.");
         }
 
-        function joinRoom(hostId) {
+        window.joinRoom = function(hostId) {
             if(!mq || !mq.connected) initNet(); 
             let enteredPass = prompt("Enter room password (leave blank if none):");
             if(enteredPass === null) return; 
@@ -1466,6 +1354,136 @@
         }
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
+    </script>
+
+    <!-- SERVER LOGIC (Loaded Last to Ensure UI is Ready) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
+            authDomain: "akshat-chess.firebaseapp.com",
+            projectId: "akshat-chess",
+            storageBucket: "akshat-chess.firebasestorage.app",
+            messagingSenderId: "821222063303",
+            appId: "1:821222063303:web:79945a324b70b0eed592e2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.fbAuth = auth;
+        window.fbDb = db;
+
+        window.saveUsername = async () => {
+            const uInput = document.getElementById('username-input').value.trim();
+            const pInput = document.getElementById('password-input').value.trim();
+            const msg = document.getElementById('auth-msg');
+            
+            if(uInput.length < 3 || pInput.length < 6) {
+                msg.innerText = "Username 3+ chars, Password 6+ chars.";
+                return;
+            }
+
+            msg.innerText = "Connecting to server...";
+            const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
+
+            try {
+                // Try Login
+                await signInWithEmailAndPassword(auth, fakeEmail, pInput);
+                msg.innerText = "Logged in successfully!";
+                
+                // FORCE THE SCREEN CHANGE IF LISTENER IS SLOW
+                window.playerName = uInput;
+                document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                window.updateWelcomeTag();
+                window.nav('screen-home');
+
+            } catch (error) {
+                // Try Register
+                try {
+                    const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
+                    
+                    try {
+                        await setDoc(doc(db, "users", userCred.user.uid), {
+                            username: uInput,
+                            avatar: window.selectedAvatarIcon || "😎",
+                            elo: 1200,
+                            rank: "",
+                            isBanned: false
+                        });
+                    } catch (dbErr) {
+                        console.log("Database secured. Using local data.");
+                    }
+
+                    msg.innerText = "Account created!";
+                    
+                    // FORCE THE SCREEN CHANGE
+                    window.playerName = uInput;
+                    document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                    window.updateWelcomeTag();
+                    window.nav('screen-home');
+
+                } catch(regErr) {
+                    msg.innerText = "Error: Invalid credentials or name taken.";
+                }
+            }
+        };
+
+        window.logOut = () => {
+            signOut(auth).then(() => {
+                window.playerName = "";
+                window.playerRank = "";
+                window.nav('screen-login');
+                window.closeSettings();
+            });
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Instantly apply defaults in case the database connection is slow or blocked
+                window.playerName = user.email.split('@')[0];
+                window.playerRank = "";
+                window.playerAvatar = window.selectedAvatarIcon || "😎";
+                
+                try {
+                    const docSnap = await getDoc(doc(db, "users", user.uid));
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        if(data.isBanned) {
+                            document.getElementById('ban-screen').style.display = 'flex';
+                            signOut(auth);
+                            return;
+                        }
+
+                        window.playerName = data.username || window.playerName;
+                        window.playerRank = data.rank || "";
+                        window.playerAvatar = data.avatar || "😎";
+                    }
+                } catch (err) {
+                    console.log("Using local data connection.");
+                }
+
+                // Push final update to UI
+                document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                window.updateWelcomeTag();
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const joinId = urlParams.get('join');
+                if(joinId) {
+                    window.openLobby();
+                    setTimeout(() => window.joinRoom(joinId), 1000);
+                } else {
+                    window.nav('screen-home');
+                }
+            } else {
+                window.nav('screen-login');
+            }
+        });
     </script>
 </body>
 </html>
