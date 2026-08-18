@@ -380,7 +380,7 @@
             </div>
 
             <!-- DATABASE TAB -->
-            <div id="admin-db-section" style="display: none; display: flex; flex-direction: column; flex-grow: 1;">
+            <div id="admin-db-section" style="display: none; flex-direction: column; flex-grow: 1;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted);">
                     <span>Total Accounts Registered: <strong id="admin-total-db-count" style="color: var(--accent);">Loading...</strong></span>
                     <button class="btn-small" onclick="window.loadAllUsersForAdmin()">↻ Refresh</button>
@@ -504,24 +504,52 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
+    <!-- CORE GAME LOGIC -->
     <script>
-        /* =========================================
-           ADMIN CONFIGURATION
-        ========================================= */
-        let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
-
         /* =========================================
            CORE STATE SYSTEM
         ========================================= */
+        let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
-        let playerName = "Player";
-        let playerRank = "";
+        window.playerName = "Player";
+        window.playerRank = "";
+        window.playerAvatar = "😎";
         let oppName = "Opponent", oppRank = "";
         
         let livePlayers = {};
+        let allTimeSessionPlayers = new Set(); 
         let currentActivity = "Main Menu";
+
+        /* =========================================
+           FAILSAFE SPLASH SCREEN (Instantly Loads)
+        ========================================= */
+        document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(() => {
+                const bar = document.getElementById('splash-bar');
+                const status = document.getElementById('splash-status');
+                if (bar) bar.style.width = '100%';
+                if (status) status.innerText = 'ONLINE SYSTEMS READY';
+
+                setTimeout(() => {
+                    const splash = document.getElementById('splash-screen');
+                    if(splash) splash.style.opacity = '0';
+                    setTimeout(() => { 
+                        if(splash) splash.style.display = 'none'; 
+                    }, 800);
+                }, 1100);
+            }, 100);
+
+            // Failsafe: if Firebase takes more than 3 seconds or is blocked, show login screen anyway
+            setTimeout(() => {
+                if(document.querySelectorAll('.screen.active').length === 0) {
+                    window.nav('screen-login');
+                }
+            }, 2500);
+
+            try { initNet(); } catch(e) { console.error("Net Init Delayed", e); }
+        });
 
         /* =========================================
            VOICE CHAT SYSTEM (PEERJS)
@@ -533,15 +561,17 @@
 
         function initPeer() {
             if (peer) return;
-            peer = new Peer(mId); 
-            peer.on('call', (call) => {
-                currentCall = call;
-                window.appendChat("📞 Opponent is calling! Click '🎤 Mic' to answer.", 'sys');
-                if (localStream) {
-                    call.answer(localStream);
-                    setupCallEvents(call);
-                }
-            });
+            try {
+                peer = new Peer(mId); 
+                peer.on('call', (call) => {
+                    currentCall = call;
+                    window.appendChat("📞 Opponent is calling! Click '🎤 Mic' to answer.", 'sys');
+                    if (localStream) {
+                        call.answer(localStream);
+                        setupCallEvents(call);
+                    }
+                });
+            } catch(e) { console.log("PeerJS not loaded yet"); }
         }
 
         function setupCallEvents(call) {
@@ -684,7 +714,7 @@
             document.getElementById('admin-modal').style.display = 'flex';
             window.renderAdminDashboard();
             if (window.loadAllUsersForAdmin) {
-                window.loadAllUsersForAdmin(); // Fetch offline Firebase accounts
+                window.loadAllUsersForAdmin();
             }
         }
 
@@ -882,6 +912,7 @@
            ROUTER & NAVIGATION
         ========================================= */
         window.nav = function(id) { 
+            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             $('.screen').removeClass('active'); 
             $('#' + id).addClass('active'); 
             
@@ -915,7 +946,6 @@
 
         window.sendPresence = function() {
             if (mq && mq.connected) {
-                // IMPERATIVE FIX: Grab the current board layout continuously for spectators.
                 let currentFen = null;
                 if(gm && currentActivity.includes("Match")) {
                     currentFen = gm.fen();
@@ -998,7 +1028,8 @@
             
             let pHTML = window.getBadgeHTML(window.playerRank);
             $('#plr-name').html(window.playerName + ' ' + pHTML);
-            
+            $('#plr-avatar').text(window.playerAvatar || '😎');
+
             window.drawUI();
             selectedSq = null;
             window.sendPresence(); 
@@ -1074,7 +1105,6 @@
             $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
             window.drawUI(); 
             
-            // CRITICAL FIX: Send presence immediately after a move to sync Spectator screen live!
             window.sendPresence();
 
             if (eng) { eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100'); }
@@ -1169,10 +1199,12 @@
                 mq.subscribe(`nx_inbox_${mId}`);
                 mq.subscribe('nx_admin_cmd');
                 
-                mq.subscribe('nx_presence_v1');
-                clearInterval(presenceTimer);
-                presenceTimer = setInterval(window.sendPresence, 3000);
-                window.sendPresence();
+                if(localStorage.getItem('akshat_chess_banned') !== 'true') {
+                    mq.subscribe('nx_presence_v1');
+                    clearInterval(presenceTimer);
+                    presenceTimer = setInterval(window.sendPresence, 3000);
+                    window.sendPresence();
+                }
             });
 
             mq.on('message', (top, msg) => {
@@ -1186,7 +1218,6 @@
                         window.renderAdminDashboard();
                     }
 
-                    // ADMIN SPECTATOR SYNC
                     if (activeSpectateId === d.id) {
                         if (d.fen) {
                             if (specBoard) specBoard.position(d.fen);
@@ -1197,7 +1228,6 @@
                     }
                 }
 
-                // ADMIN COMMANDS
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
                     if (d.cmd === 'announce') {
                         document.getElementById('announcement-text').innerText = d.text;
@@ -1205,7 +1235,6 @@
                         window.playMsgSfx();
                     }
                     if (d.cmd === 'ban' && d.target === mId) {
-                        // Mark user banned locally AND in Firebase
                         if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
                             import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
                                 module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true });
@@ -1234,6 +1263,8 @@
                         alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
                     }
                 }
+
+                if(localStorage.getItem('akshat_chess_banned') === 'true') return;
 
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
@@ -1443,7 +1474,8 @@
                 msg.innerText = "Logged in successfully!";
                 
                 window.playerName = uInput;
-                document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                window.playerAvatar = window.selectedAvatarIcon || "😎";
+                document.getElementById('plr-avatar').innerText = window.playerAvatar;
                 window.updateWelcomeTag();
                 window.nav('screen-home');
                 
@@ -1468,7 +1500,8 @@
 
                     msg.innerText = "Account created!";
                     window.playerName = uInput;
-                    document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                    window.playerAvatar = window.selectedAvatarIcon || "😎";
+                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
                     window.updateWelcomeTag();
                     window.nav('screen-home');
                     
@@ -1483,7 +1516,7 @@
 
         window.logOut = () => {
             signOut(auth).then(() => {
-                window.playerName = "";
+                window.playerName = "Player";
                 window.playerRank = "";
                 window.nav('screen-login');
                 window.closeSettings();
@@ -1495,7 +1528,7 @@
                 if (user) {
                     window.playerName = user.email.split('@')[0];
                     window.playerRank = "";
-                    window.playerAvatar = window.selectedAvatarIcon || "😎";
+                    window.playerAvatar = "😎";
                     
                     try {
                         const docSnap = await getDoc(doc(db, "users", user.uid));
@@ -1528,7 +1561,10 @@
                         window.nav('screen-home');
                     }
                 } else {
-                    window.nav('screen-login');
+                    // Only transition to login if we aren't already actively doing something
+                    if(document.querySelectorAll('.screen.active').length === 0 || document.getElementById('screen-home').classList.contains('active')) {
+                        window.nav('screen-login');
+                    }
                 }
             } catch(e) {
                 console.log("Auth Error: Reverting to Login");
