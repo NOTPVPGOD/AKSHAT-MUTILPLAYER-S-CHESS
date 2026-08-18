@@ -303,7 +303,7 @@
         <div class="splash-status" id="splash-status">INITIALIZING GAME ENGINE...</div>
     </div>
 
-    <!-- LOGIN SCREEN (Updated with Avatar Selection) -->
+    <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen">
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Create an account to join the multiplayer server.</div>
@@ -322,19 +322,19 @@
 
             <input type="text" id="username-input" class="login-input" placeholder="Enter Username" maxlength="12">
             <input type="password" id="password-input" class="login-input" placeholder="Create Password" maxlength="20">
-            <button class="btn btn-primary" onclick="window.saveUsername()" style="margin-top: 6px; width: 100%;">Save to Firebase</button>
+            <button class="btn btn-primary" onclick="window.saveUsername()" style="margin-top: 6px; width: 100%;">Continue</button>
             <p id="auth-msg" style="color: var(--gold); font-size: 0.85rem; margin-top: 10px; text-align: center;"></p>
         </div>
     </div>
 
-    <!-- MAIN MENU (Updated with Matchmaking & Puzzles) -->
+    <!-- MAIN MENU -->
     <div id="screen-home" class="screen">
         <!-- SECRET ADMIN TAP: Tap logo 5 times quickly -->
         <div class="logo" onclick="handleLogoTap()">♟️ Akshat's Chess</div>
         <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
-            <!-- NEW MATCHMAKING QUEUES -->
+            <!-- MATCHMAKING QUEUES -->
             <div style="display: flex; gap: 8px; margin-bottom: 4px;">
                 <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(1)">⚡ 1 Min</button>
                 <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(3)">🔥 3 Min</button>
@@ -351,7 +351,7 @@
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
                 <button class="btn btn-secondary" onclick="openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
-                <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from Firebase...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
+                <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from server...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 2px;">
@@ -399,7 +399,7 @@
                 </select>
             </div>
             <div class="setting-row">
-                <label style="font-weight: 500; font-size: 0.9rem;">Change Name</label>
+                <label style="font-weight: 500; font-size: 0.9rem;">Account Action</label>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="window.logOut()">Sign Out</button>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
@@ -430,7 +430,7 @@
         </div>
     </div>
 
-    <!-- OPPONENT SELECT (Added Boss) -->
+    <!-- OPPONENT SELECT -->
     <div id="screen-solo" class="screen">
         <h2 style="margin-bottom: 6px; font-size: 2rem;">Select Opponent</h2>
         <p style="color: var(--text-muted); margin-bottom: 22px; font-size: 0.95rem;">Train against the world's best engines.</p>
@@ -547,7 +547,6 @@
                     </div>
 
                     <div class="action-row">
-                        <!-- NEW VOICE CHAT BUTTON -->
                         <button class="btn btn-secondary" id="btn-voice" onclick="toggleVoiceChat()">🎤 Connect Mic</button>
                         <button class="btn btn-secondary" id="btn-hint" onclick="reqHint()">💡 Hint</button>
                         <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.3); color: #f87171;">🏳️ Resign</button>
@@ -563,7 +562,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-    <!-- FIREBASE INTEGRATION (Overriding LocalStorage) -->
+    <!-- SERVER INTEGRATION -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
@@ -582,11 +581,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Make globally available for the rest of the script
         window.fbAuth = auth;
         window.fbDb = db;
 
-        // Override saveUsername to use Firebase
         window.saveUsername = async () => {
             const uInput = document.getElementById('username-input').value.trim();
             const pInput = document.getElementById('password-input').value.trim();
@@ -597,15 +594,13 @@
                 return;
             }
 
-            msg.innerText = "Connecting to Database...";
+            msg.innerText = "Connecting to server...";
             const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
 
             try {
-                // Try Login First
                 await signInWithEmailAndPassword(auth, fakeEmail, pInput);
                 msg.innerText = "Logged in successfully!";
             } catch (error) {
-                // If login fails, try Registering
                 try {
                     const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
                     await setDoc(doc(db, "users", userCred.user.uid), {
@@ -631,7 +626,6 @@
             });
         };
 
-        // Listen for Firebase Auth State
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const docSnap = await getDoc(doc(db, "users", user.uid));
@@ -711,7 +705,6 @@
         ========================================= */
         function findMatch(minutes) {
             nav('screen-searching');
-            // Simulate queue finding someone after 3 seconds for now
             setTimeout(() => {
                 oppName = "RandomPlayer" + Math.floor(Math.random() * 100);
                 oppRank = "";
@@ -728,9 +721,9 @@
            PUZZLE MODE
         ========================================= */
         const PUZZLES = [
-            "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", // Scholar's mate
-            "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", // Rook mate
-            "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1" // Fool's mate setup
+            "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", 
+            "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1",
+            "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1"
         ];
         function playPuzzle() {
             let fen = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
@@ -750,7 +743,6 @@
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, aTop = null;
         
-        // These are set by Firebase now
         window.playerName = "";
         window.playerRank = "";
         
@@ -804,7 +796,7 @@
         function closeAnnouncement() { document.getElementById('announcement-overlay').style.display = 'none'; }
 
         /* =========================================
-           SECRET ADMIN TAP PROTOCOL (5 Taps)
+           SECRET ADMIN TAP PROTOCOL
         ========================================= */
         let adminTaps = 0;
         let adminTimeout;
@@ -1293,7 +1285,7 @@
                     if ($('#admin-modal').is(':visible')) renderAdminDashboard();
                 }
 
-                // 2. ADMIN ENFORCEMENT COMMANDS
+                // ADMIN ENFORCEMENT COMMANDS
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
                     
                     if (d.cmd === 'announce') {
@@ -1303,7 +1295,6 @@
                     }
 
                     if (d.cmd === 'ban' && d.target === mId) {
-                        // Banned - Update Firebase to lock account globally
                         if (window.fbDb && window.fbAuth.currentUser) {
                             import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
                                 module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true });
@@ -1351,7 +1342,6 @@
                     if(d.a === 'join' && currentActivity === "Hosting a Match Room") {
                         let hostPass = document.getElementById('room-password-create').value;
                         if(hostPass !== "" && d.pass !== hostPass) {
-                            // Incorrect Password
                             mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'rejected', msg:"Incorrect Room Password."}));
                             return;
                         }
@@ -1440,7 +1430,7 @@
         function joinRoom(hostId) {
             if(!mq || !mq.connected) initNet(); 
             let enteredPass = prompt("Enter room password (leave blank if none):");
-            if(enteredPass === null) return; // User cancelled
+            if(enteredPass === null) return; 
 
             currentActivity = "Connecting to Room...";
             $('#lobby-ui').hide(); $('#host-ui').show(); 
