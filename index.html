@@ -271,7 +271,7 @@
             <div style="font-size: 3rem; margin-bottom: 10px;">📢</div>
             <h2 style="color: var(--gold); margin-bottom: 15px;">SERVER ANNOUNCEMENT</h2>
             <p id="announcement-text" style="font-size: 1.1rem; margin-bottom: 25px; line-height: 1.5;"></p>
-            <button class="btn btn-primary" style="width: 100%; background: var(--gold); color: #000; font-weight: bold;" onclick="closeAnnouncement()">Acknowledge</button>
+            <button class="btn btn-primary" style="width: 100%; background: var(--gold); color: #000; font-weight: bold;" onclick="window.closeAnnouncement()">Acknowledge</button>
         </div>
     </div>
 
@@ -312,11 +312,11 @@
             <div style="text-align: center; margin-bottom: 15px;">
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Select Profile Avatar</p>
                 <div style="display: flex; gap: 10px; justify-content: center;">
-                    <div class="avatar-option selected" onclick="selectAvatar('😎', this)">😎</div>
-                    <div class="avatar-option" onclick="selectAvatar('🐉', this)">🐉</div>
-                    <div class="avatar-option" onclick="selectAvatar('🚀', this)">🚀</div>
-                    <div class="avatar-option" onclick="selectAvatar('🤖', this)">🤖</div>
-                    <div class="avatar-option" onclick="selectAvatar('💀', this)">💀</div>
+                    <div class="avatar-option selected" onclick="window.selectAvatar('😎', this)">😎</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🐉', this)">🐉</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🚀', this)">🚀</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🤖', this)">🤖</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('💀', this)">💀</div>
                 </div>
             </div>
 
@@ -329,33 +329,31 @@
 
     <!-- MAIN MENU -->
     <div id="screen-home" class="screen">
-        <!-- SECRET ADMIN TAP: Tap logo 5 times quickly -->
-        <div class="logo" onclick="handleLogoTap()">♟️ Akshat's Chess</div>
+        <div class="logo" onclick="window.handleLogoTap()">♟️ Akshat's Chess</div>
         <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
-            <!-- MATCHMAKING QUEUES -->
             <div style="display: flex; gap: 8px; margin-bottom: 4px;">
-                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(1)">⚡ 1 Min</button>
-                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(3)">🔥 3 Min</button>
-                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(10)">🧠 10 Min</button>
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="window.findMatch(1)">⚡ 1 Min</button>
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="window.findMatch(3)">🔥 3 Min</button>
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="window.findMatch(10)">🧠 10 Min</button>
             </div>
             
-            <button class="btn btn-secondary" onclick="openLobby()">🏠 Create / Join Custom Room</button>
-            <button class="btn" onclick="nav('screen-solo')">🤖 Play vs AI & Bosses</button>
+            <button class="btn btn-secondary" onclick="window.openLobby()">🏠 Create / Join Custom Room</button>
+            <button class="btn" onclick="window.nav('screen-solo')">🤖 Play vs AI & Bosses</button>
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
-                <button class="btn" style="flex: 1; border-color: var(--gold); color: var(--gold);" onclick="playPuzzle()">🧩 Random Puzzle</button>
-                <button class="btn" onclick="startLocalMatch()" style="flex: 1;">👥 Pass & Play</button>
+                <button class="btn" style="flex: 1; border-color: var(--gold); color: var(--gold);" onclick="window.playPuzzle()">🧩 Random Puzzle</button>
+                <button class="btn" onclick="window.startLocalMatch()" style="flex: 1;">👥 Pass & Play</button>
             </div>
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
-                <button class="btn btn-secondary" onclick="openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
+                <button class="btn btn-secondary" onclick="window.openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
                 <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from server...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 2px;">
-                <button class="btn" onclick="openSettings()" style="flex: 1; background: transparent; padding: 12px 0; font-size: 0.85rem;">⚙️ Game Settings</button>
+                <button class="btn" onclick="window.openSettings()" style="flex: 1; background: transparent; padding: 12px 0; font-size: 0.85rem;">⚙️ Game Settings</button>
                 <button class="btn" onclick="window.open('https://notpvpgod.github.io/', '_blank')" style="flex: 1; background: transparent; padding: 12px 0; font-size: 0.85rem;">👨‍💻 About Developer</button>
             </div>
         </div>
@@ -374,7 +372,7 @@
                 <li><strong>Online Play:</strong> Use quick matchmaking or create a password-protected custom room.</li>
                 <li><strong>Puzzles:</strong> Solve AI-generated Mate-in-1 and Mate-in-2 puzzles to practice.</li>
             </ul>
-            <button class="btn btn-primary" style="width: 100%;" onclick="closeHowToPlay()">Understood!</button>
+            <button class="btn btn-primary" style="width: 100%;" onclick="window.closeHowToPlay()">Understood!</button>
         </div>
     </div>
 
@@ -384,7 +382,7 @@
             <h2 style="margin-bottom: 18px; font-size: 1.25rem;">⚙️ Game Settings</h2>
             <div class="setting-row">
                 <label style="font-weight: 500; font-size: 0.9rem;">Board Theme</label>
-                <select id="theme-select" onchange="changeTheme()">
+                <select id="theme-select" onchange="window.changeTheme()">
                     <option value="theme-default">Classic Minimal</option>
                     <option value="theme-wood">Walnut Wood</option>
                     <option value="theme-cyber">Cyberpunk Neon</option>
@@ -402,7 +400,7 @@
                 <label style="font-weight: 500; font-size: 0.9rem;">Account Action</label>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="window.logOut()">Sign Out</button>
             </div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.closeSettings()">Save & Close</button>
         </div>
     </div>
 
@@ -411,14 +409,14 @@
         <div class="admin-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <h2 style="font-size: 1.2rem; color: #f87171;">🛡️ Server Admin Panel</h2>
-                <button class="btn-small" onclick="closeAdmin()">✕ Close</button>
+                <button class="btn-small" onclick="window.closeAdmin()">✕ Close</button>
             </div>
             
             <div class="admin-toolbar">
-                <button class="btn-small btn-secondary" onclick="adminUnbanId()">🔓 Unban Specific ID</button>
-                <button class="btn-small btn-secondary" onclick="adminUnbanAll()" style="color: var(--success); border-color: rgba(16,185,129,0.3);">🌍 Global Unban</button>
-                <button class="btn-small" style="background: var(--gold); color: #000; border-color: var(--gold);" onclick="adminAnnounce()">📢 Global Announcement</button>
-                <button class="btn-small" onclick="adminChangePassword()" style="margin-left: auto;">🔑 Change Password</button>
+                <button class="btn-small btn-secondary" onclick="window.adminUnbanId()">🔓 Unban Specific ID</button>
+                <button class="btn-small btn-secondary" onclick="window.adminUnbanAll()" style="color: var(--success); border-color: rgba(16,185,129,0.3);">🌍 Global Unban</button>
+                <button class="btn-small" style="background: var(--gold); color: #000; border-color: var(--gold);" onclick="window.adminAnnounce()">📢 Global Announcement</button>
+                <button class="btn-small" onclick="window.adminChangePassword()" style="margin-left: auto;">🔑 Change Password</button>
             </div>
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-muted);">
@@ -439,7 +437,7 @@
         </div>
         <div class="roster-grid" style="margin-top: 15px;">
             <!-- THE FINAL BOSS -->
-            <div class="roster-card" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.05);" onclick="initFinalBoss()">
+            <div class="roster-card" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.05);" onclick="window.initFinalBoss()">
                 <div class="r-avatar">🔥</div>
                 <div class="r-name" style="color: var(--danger); font-size: 1.3rem;">THE FINAL BOSS</div>
                 <div class="r-elo">ELO 3200 (UNDEFEATED)</div>
@@ -465,7 +463,7 @@
         <div id="lobby-ui" style="width: 100%; max-width: 420px;">
             <div style="background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border-subtle);">
                 <input type="password" id="room-password-create" class="login-input" placeholder="Set Room Password (Optional)" style="margin-bottom: 10px;">
-                <button class="btn btn-primary" style="width: 100%; padding: 16px;" onclick="hostMatch()">➕ Create Custom Room</button>
+                <button class="btn btn-primary" style="width: 100%; padding: 16px;" onclick="window.hostMatch()">➕ Create Custom Room</button>
             </div>
             
             <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;">Available Rooms</h3>
@@ -483,7 +481,7 @@
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 700;">INVITE A FRIEND DIRECTLY:</div>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="invite-link" readonly style="flex: 1; background: transparent; border: none; color: var(--accent); font-size: 0.7rem; outline: none; font-family: monospace;">
-                    <button onclick="copyInvite()" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); color: #fff; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700;">COPY</button>
+                    <button onclick="window.copyInvite()" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); color: #fff; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700;">COPY</button>
                 </div>
             </div>
 
@@ -533,23 +531,23 @@
                     </div>
 
                     <div class="chat-chips">
-                        <button class="chat-chip" onclick="sendChat('Good luck!')">👋 Hi</button>
-                        <button class="chat-chip" onclick="sendChat('Nice move!')">🎯 Nice</button>
-                        <button class="chat-chip" onclick="sendChat('Oops!')">😅 Oops</button>
-                        <button class="chat-chip" onclick="sendChat('🔥')">🔥</button>
-                        <button class="chat-chip" onclick="sendChat('🤯')">🤯</button>
-                        <button class="chat-chip" onclick="sendChat('GG')">🤝 GG</button>
+                        <button class="chat-chip" onclick="window.sendChat('Good luck!')">👋 Hi</button>
+                        <button class="chat-chip" onclick="window.sendChat('Nice move!')">🎯 Nice</button>
+                        <button class="chat-chip" onclick="window.sendChat('Oops!')">😅 Oops</button>
+                        <button class="chat-chip" onclick="window.sendChat('🔥')">🔥</button>
+                        <button class="chat-chip" onclick="window.sendChat('🤯')">🤯</button>
+                        <button class="chat-chip" onclick="window.sendChat('GG')">🤝 GG</button>
                     </div>
 
                     <div class="custom-chat-row">
                         <input type="text" id="chat-input" class="custom-chat-input" placeholder="Type a message..." maxlength="60">
-                        <button class="custom-chat-btn" onclick="sendCustomChat()">Send</button>
+                        <button class="custom-chat-btn" onclick="window.sendCustomChat()">Send</button>
                     </div>
 
                     <div class="action-row">
-                        <button class="btn btn-secondary" id="btn-voice" onclick="toggleVoiceChat()">🎤 Connect Mic</button>
-                        <button class="btn btn-secondary" id="btn-hint" onclick="reqHint()">💡 Hint</button>
-                        <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.3); color: #f87171;">🏳️ Resign</button>
+                        <button class="btn btn-secondary" id="btn-voice" onclick="window.toggleVoiceChat()">🎤 Connect Mic</button>
+                        <button class="btn btn-secondary" id="btn-hint" onclick="window.reqHint()">💡 Hint</button>
+                        <button class="btn" onclick="window.quitMatch()" style="border-color: rgba(239, 68, 68, 0.3); color: #f87171;">🏳️ Resign</button>
                     </div>
                 </div>
             </div>
@@ -568,14 +566,14 @@
            AVATAR SELECTION
         ========================================= */
         window.selectedAvatarIcon = "😎";
-        function selectAvatar(icon, el) {
+        window.selectAvatar = function(icon, el) {
             window.selectedAvatarIcon = icon;
             document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
             el.classList.add('selected');
         }
 
         /* =========================================
-           ROUTER & NAVIGATION (Globally Scoped!)
+           ROUTER & NAVIGATION
         ========================================= */
         window.nav = function(id) { 
             $('.screen').removeClass('active'); 
@@ -602,10 +600,10 @@
         }
 
         /* =========================================
-           WEBRTC VOICE CHAT STUB (Microphone)
+           WEBRTC VOICE CHAT STUB
         ========================================= */
         let localStream = null;
-        async function toggleVoiceChat() {
+        window.toggleVoiceChat = async function() {
             const btn = document.getElementById('btn-voice');
             if (!localStream) {
                 try {
@@ -633,7 +631,7 @@
         /* =========================================
            MATCHMAKING QUEUES
         ========================================= */
-        function findMatch(minutes) {
+        window.findMatch = function(minutes) {
             window.nav('screen-searching');
             setTimeout(() => {
                 oppName = "RandomPlayer" + Math.floor(Math.random() * 100);
@@ -655,7 +653,7 @@
             "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1",
             "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1"
         ];
-        function playPuzzle() {
+        window.playPuzzle = function() {
             let fen = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
             gMode = 'puzzle';
             oppName = "Puzzle Master";
@@ -723,7 +721,7 @@
         let adminTaps = 0;
         let adminTimeout;
         
-        function handleLogoTap() {
+        window.handleLogoTap = function() {
             adminTaps++;
             clearTimeout(adminTimeout);
             
@@ -749,12 +747,12 @@
             renderAdminDashboard();
         }
 
-        function closeAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
+        window.closeAdmin = function() { document.getElementById('admin-modal').style.display = 'none'; }
 
         /* =========================================
            ADMIN PANEL COMMANDS & CONTROLS
         ========================================= */
-        function adminChangePassword() {
+        window.adminChangePassword = function() {
             let newPass = prompt("Enter new Admin Passkey:");
             if (newPass && newPass.trim() !== "") {
                 ADMIN_PASS = newPass.trim();
@@ -763,7 +761,7 @@
             }
         }
 
-        function adminUnbanId() {
+        window.adminUnbanId = function() {
             let targetId = prompt("Enter Player ID to unban:");
             if (targetId && targetId.trim() !== "") {
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: targetId.trim(), key: ADMIN_PASS }));
@@ -771,14 +769,14 @@
             }
         }
 
-        function adminUnbanAll() {
+        window.adminUnbanAll = function() {
             if(confirm("Lift all network bans globally?")) {
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: 'ALL', key: ADMIN_PASS }));
                 alert("Global unban sequence broadcasted.");
             }
         }
 
-        function adminAnnounce() {
+        window.adminAnnounce = function() {
             let msg = prompt("Enter your message to broadcast to all online players:");
             if (msg && msg.trim() !== "") {
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'announce', text: msg.trim(), key: ADMIN_PASS }));
@@ -821,7 +819,7 @@
             list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">Scanning for active players...</div>' : html;
         }
 
-        function adminBanOptions(targetId, targetName) {
+        window.adminBanOptions = function(targetId, targetName) {
             if (targetId === mId) { alert("Action blocked: Cannot target self."); return; }
             let choice = prompt(`Ban Protocol for ${targetName}:\n\n[1] Permanent Ban\n[2] 10-Minute Ban\n[3] 1-Hour Ban`);
             let mins = -1;
@@ -837,7 +835,7 @@
             }
         }
 
-        function adminSetRank(targetId) {
+        window.adminSetRank = function(targetId) {
             let rank = prompt("Designate Rank (DEV, VIP, MOD, MASTER):");
             if (rank !== null) {
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'rank', target: targetId, rank: rank.toUpperCase(), key: ADMIN_PASS }));
@@ -847,46 +845,64 @@
         }
 
         /* =========================================
-           AUDIO & CHAT NOTIFICATION ENGINE
+           SAFE AUDIO & CHAT NOTIFICATION ENGINE
         ========================================= */
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSfx(t) {
+        let audioCtx = null;
+        window.getAudioCtx = function() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                try { audioCtx.resume(); } catch(e){}
+            }
+            return audioCtx;
+        }
+
+        window.playSfx = function(t) {
             if(document.getElementById('sound-select').value === 'off') return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
+            const ctx = window.getAudioCtx();
+            if(!ctx) return;
             
-            if (t === 'm') { 
-                o.frequency.setValueAtTime(320, audioCtx.currentTime); 
-                o.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08); 
-                g.gain.setValueAtTime(0.25, audioCtx.currentTime); 
-                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
-                o.start(); o.stop(audioCtx.currentTime + 0.08); 
-            }
-            if (t === 'c') { 
-                o.type = 'triangle'; 
-                o.frequency.setValueAtTime(250, audioCtx.currentTime); 
-                o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.12); 
-                g.gain.setValueAtTime(0.3, audioCtx.currentTime); 
-                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); 
-                o.start(); o.stop(audioCtx.currentTime + 0.12); 
-            }
+            try {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                
+                if (t === 'm') { 
+                    o.frequency.setValueAtTime(320, ctx.currentTime); 
+                    o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08); 
+                    g.gain.setValueAtTime(0.25, ctx.currentTime); 
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); 
+                    o.start(); o.stop(ctx.currentTime + 0.08); 
+                }
+                if (t === 'c') { 
+                    o.type = 'triangle'; 
+                    o.frequency.setValueAtTime(250, ctx.currentTime); 
+                    o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.12); 
+                    g.gain.setValueAtTime(0.3, ctx.currentTime); 
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12); 
+                    o.start(); o.stop(ctx.currentTime + 0.12); 
+                }
+            } catch(e) {}
         }
 
-        function playMsgSfx() {
+        window.playMsgSfx = function() {
             if(document.getElementById('sound-select').value === 'off') return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.type = 'sine'; 
-            o.frequency.setValueAtTime(580, audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.07);
-            g.gain.setValueAtTime(0.15, audioCtx.currentTime); 
-            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.07);
-            o.connect(g); g.connect(audioCtx.destination);
-            o.start(); o.stop(audioCtx.currentTime + 0.07);
+            const ctx = window.getAudioCtx();
+            if(!ctx) return;
+
+            try {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = 'sine'; 
+                o.frequency.setValueAtTime(580, ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.07);
+                g.gain.setValueAtTime(0.15, ctx.currentTime); 
+                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.07);
+                o.connect(g); g.connect(ctx.destination);
+                o.start(); o.stop(ctx.currentTime + 0.07);
+            } catch(e) {}
         }
 
-        function speak(text) {
+        window.speak = function(text) {
             if(document.getElementById('sound-select').value === 'off') return;
             let msg = new SpeechSynthesisUtterance(text);
             msg.rate = 1.1; msg.pitch = 0.9;
@@ -910,36 +926,39 @@
         ROSTER.forEach(b => {
             const c = document.createElement('div');
             c.className = 'roster-card';
-            c.onclick = () => initCPU(b);
+            c.onclick = () => window.initCPU(b);
             c.innerHTML = `<div class="r-avatar">${b.avatar}</div><div class="r-name">${b.name}</div><div class="r-elo">ELO ${b.rating}</div>`;
             rg.appendChild(c);
         });
 
-        function initFinalBoss() {
+        window.initFinalBoss = function() {
             let boss = { name: "FINAL BOSS", avatar: "🔥", lvl: 20, tm: 1500, quotes: ["I see mate in 14.", "Your structure is already crumbling.", "Submit."] };
-            initCPU(boss);
+            window.initCPU(boss);
         }
 
         /* =========================================
-           STOCKFISH AI WORKER
+           STOCKFISH AI WORKER (Safe Load)
         ========================================= */
         let eng = null, thinking = false, hintReq = false;
-        fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
-            eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
-            eng.onmessage = e => {
-                const m = e.data;
-                if(m.includes('score cp')) { let x = m.match(/score cp (-?\d+)/); if(x) setEval(parseInt(x[1])/100); }
-                if(m.startsWith('bestmove')) {
-                    const mv = m.split(' ')[1];
-                    if(hintReq) { showH(mv); hintReq = false; }
-                    else if(thinking) { applyMv(mv.substring(0,2), mv.substring(2,4), mv[4]||'q'); thinking = false; }
-                }
-            };
-            eng.postMessage('uci');
-        });
+        try {
+            fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.0/stockfish.js').then(r=>r.text()).then(c=>{
+                eng = new Worker(URL.createObjectURL(new Blob([c], {type:'application/javascript'})));
+                eng.onmessage = e => {
+                    const m = e.data;
+                    if(m.includes('score cp')) { let x = m.match(/score cp (-?\d+)/); if(x) setEval(parseInt(x[1])/100); }
+                    if(m.startsWith('bestmove')) {
+                        const mv = m.split(' ')[1];
+                        if(hintReq) { showH(mv); hintReq = false; }
+                        else if(thinking) { applyMv(mv.substring(0,2), mv.substring(2,4), mv[4]||'q'); thinking = false; }
+                    }
+                };
+                eng.postMessage('uci');
+            }).catch(e => { console.log("AI Offline"); });
+        } catch(e) {}
 
-        function askEng(lvl, tm) { if(gm.game_over()) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
-        function reqHint() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating optimal path...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
+        function askEng(lvl, tm) { if(gm.game_over() || !eng) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
+        
+        window.reqHint = function() { if(gm.game_over()||thinking||!eng) return; hintReq = true; setLog('🧠 Calculating optimal path...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
         function showH(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); setLog('💡 Suggested vector displayed.'); } }
 
         /* =========================================
@@ -948,7 +967,7 @@
         let brd = null, gm = new Chess(), gMode = 'cpu', myCol = 'w', aBot = null, tW = 600, tB = 600, tmr = null;
         let selectedSq = null; 
 
-        function initCPU(b) { 
+        window.initCPU = function(b) { 
             gMode = 'cpu'; aBot = b; 
             oppName = b.name; oppRank = "";
             currentActivity = "AI Match vs " + b.name;
@@ -960,7 +979,7 @@
             setTimeout(() => { appendChat(b.quotes[0] || "Greetings.", 'opp'); }, 1000);
         }
         
-        function startLocalMatch() { 
+        window.startLocalMatch = function() { 
             gMode = 'local'; 
             oppName = "Player 2"; oppRank = "";
             currentActivity = "Local Pass & Play Match";
@@ -991,7 +1010,6 @@
             myCol = or[0]; tW = timeSeconds; tB = timeSeconds; 
             clearInterval(tmr); tmr = setInterval(tick, 1000);
             
-            // Failsafe for badge rendering
             let bHTML = "";
             if (window.playerRank === "DEV") bHTML = '<span class="badge badge-dev">👑 DEV</span>';
             else if (window.playerRank === "VIP") bHTML = '<span class="badge badge-vip">⭐ VIP</span>';
@@ -1024,7 +1042,7 @@
                     let m = gm.move({from:s,to:t,promotion:'q'});
                     if(m===null) return 'snapback';
                     
-                    selectedSq = null; playSfx(m.captured ? 'c' : 'm'); finishMv(m);
+                    selectedSq = null; window.playSfx(m.captured ? 'c' : 'm'); finishMv(m);
                     if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:s,to:t,p:'q',s:mId}));
                 },
                 onSnapEnd: () => brd.position(gm.fen())
@@ -1042,7 +1060,7 @@
                 if(validMove) {
                     let m = gm.move({from: selectedSq, to: sq, promotion: 'q'});
                     if(m) {
-                        brd.position(gm.fen()); playSfx(m.captured ? 'c' : 'm'); finishMv(m);
+                        brd.position(gm.fen()); window.playSfx(m.captured ? 'c' : 'm'); finishMv(m);
                         if(gMode==='net'&&mq) mq.publish(aTop, JSON.stringify({t:'m',f:selectedSq,to:sq,p:'q',s:mId}));
                     }
                     selectedSq = null; clearHighlights(); return;
@@ -1060,7 +1078,7 @@
 
         function applyMv(s, t, p) { 
             let m = gm.move({from:s,to:t,promotion:p}); 
-            if(m) { brd.position(gm.fen()); playSfx(m.captured ? 'c' : 'm'); finishMv(m); } 
+            if(m) { brd.position(gm.fen()); window.playSfx(m.captured ? 'c' : 'm'); finishMv(m); } 
         }
         
         function triggerBotChat(isCheck, isCapture) {
@@ -1075,27 +1093,28 @@
 
         function finishMv(m) {
             $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
-            drawUI(); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100');
+            drawUI(); 
+            if(eng) { eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100'); }
             
             const isCheck = gm.in_check();
             if(gm.game_over()) { 
                 clearInterval(tmr); 
-                if(gm.in_checkmate()) { setLog('🏆 Checkmate. Match Over.'); speak("Checkmate!"); } 
+                if(gm.in_checkmate()) { setLog('🏆 Checkmate. Match Over.'); window.speak("Checkmate!"); } 
                 else { setLog('🤝 Match Drawn.'); }
                 if(gMode === 'cpu') setTimeout(()=> appendChat("GG.", 'opp'), 1000);
             } else { 
-                if(isCheck) { setLog('⚠️ Check!'); speak("Check."); } else { setLog(''); }
+                if(isCheck) { setLog('⚠️ Check!'); window.speak("Check."); } else { setLog(''); }
                 
                 if(gMode==='cpu' && gm.turn()!==myCol) { setTimeout(()=>askEng(aBot.lvl,aBot.tm), 250); } 
                 else if (gMode==='cpu' && gm.turn()===myCol) { triggerBotChat(isCheck, m.captured !== undefined); }
             }
         }
 
-        function quitMatch() { 
+        window.quitMatch = function() { 
             if(confirm("Are you sure you want to resign and exit?")) {
                 if(gMode === 'net' && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
                 clearInterval(tmr); 
-                returnToHome(); 
+                window.nav('screen-home'); 
             }
         }
 
@@ -1132,10 +1151,10 @@
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
             
-            if(type !== 'sys') playMsgSfx();
+            if(type !== 'sys') window.playMsgSfx();
         }
 
-        function sendChat(msg) {
+        window.sendChat = function(msg) {
             appendChat(msg, 'you');
             if(gMode === 'net' && mq && aTop) {
                 mq.publish(aTop, JSON.stringify({ t: 'chat', msg: msg, s: mId }));
@@ -1144,14 +1163,14 @@
             }
         }
         
-        function sendCustomChat() {
+        window.sendCustomChat = function() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
-            if(msg) { sendChat(msg); input.value = ''; }
+            if(msg) { window.sendChat(msg); input.value = ''; }
         }
 
         document.getElementById('chat-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendCustomChat();
+            if (e.key === 'Enter') window.sendCustomChat();
         });
 
         /* =========================================
@@ -1186,7 +1205,7 @@
                     if (d.cmd === 'announce') {
                         document.getElementById('announcement-text').innerText = d.text;
                         document.getElementById('announcement-overlay').style.display = 'flex';
-                        playMsgSfx();
+                        window.playMsgSfx();
                     }
 
                     if (d.cmd === 'ban' && d.target === mId) {
@@ -1216,7 +1235,6 @@
                         $('#room-list').find('.searching-msg').remove();
                         if($(`#rm_${d.id}`).length === 0) {
                             
-                            // Prevent badge error
                             let hBadge = "";
                             if (d.r === "DEV") hBadge = '<span class="badge badge-dev">👑 DEV</span>';
                             else if (d.r === "VIP") hBadge = '<span class="badge badge-vip">⭐ VIP</span>';
@@ -1262,7 +1280,7 @@
                     }
                     if(d.a === 'rejected') {
                         alert("Connection Refused: " + d.msg);
-                        returnToHome();
+                        window.nav('screen-home');
                     }
                     if(d.a === 'start' && currentActivity === "Connecting to Room...") {
                         aTop = d.r; 
@@ -1288,7 +1306,7 @@
                         clearInterval(tmr);
                         setLog('🏆 ' + oppName + ' disconnected. You win!');
                         appendChat(oppName + " left the match. You win!", 'sys');
-                        speak("Opponent disconnected. You win.");
+                        window.speak("Opponent disconnected. You win.");
                         $('#btn-hint').hide();
                     }
                 }
@@ -1392,18 +1410,15 @@
             const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
 
             try {
-                // Try Login
                 await signInWithEmailAndPassword(auth, fakeEmail, pInput);
                 msg.innerText = "Logged in successfully!";
                 
-                // FORCE THE SCREEN CHANGE IF LISTENER IS SLOW
                 window.playerName = uInput;
                 document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
                 window.updateWelcomeTag();
                 window.nav('screen-home');
 
             } catch (error) {
-                // Try Register
                 try {
                     const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
                     
@@ -1421,7 +1436,6 @@
 
                     msg.innerText = "Account created!";
                     
-                    // FORCE THE SCREEN CHANGE
                     window.playerName = uInput;
                     document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
                     window.updateWelcomeTag();
@@ -1443,44 +1457,47 @@
         };
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Instantly apply defaults in case the database connection is slow or blocked
-                window.playerName = user.email.split('@')[0];
-                window.playerRank = "";
-                window.playerAvatar = window.selectedAvatarIcon || "😎";
-                
-                try {
-                    const docSnap = await getDoc(doc(db, "users", user.uid));
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        
-                        if(data.isBanned) {
-                            document.getElementById('ban-screen').style.display = 'flex';
-                            signOut(auth);
-                            return;
+            try {
+                if (user) {
+                    window.playerName = user.email.split('@')[0];
+                    window.playerRank = "";
+                    window.playerAvatar = window.selectedAvatarIcon || "😎";
+                    
+                    try {
+                        const docSnap = await getDoc(doc(db, "users", user.uid));
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            
+                            if(data.isBanned) {
+                                document.getElementById('ban-screen').style.display = 'flex';
+                                signOut(auth);
+                                return;
+                            }
+
+                            window.playerName = data.username || window.playerName;
+                            window.playerRank = data.rank || "";
+                            window.playerAvatar = data.avatar || "😎";
                         }
-
-                        window.playerName = data.username || window.playerName;
-                        window.playerRank = data.rank || "";
-                        window.playerAvatar = data.avatar || "😎";
+                    } catch (err) {
+                        console.log("Using local data connection.");
                     }
-                } catch (err) {
-                    console.log("Using local data connection.");
-                }
 
-                // Push final update to UI
-                document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                window.updateWelcomeTag();
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const joinId = urlParams.get('join');
-                if(joinId) {
-                    window.openLobby();
-                    setTimeout(() => window.joinRoom(joinId), 1000);
+                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                    window.updateWelcomeTag();
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const joinId = urlParams.get('join');
+                    if(joinId) {
+                        window.openLobby();
+                        setTimeout(() => window.joinRoom(joinId), 1000);
+                    } else {
+                        window.nav('screen-home');
+                    }
                 } else {
-                    window.nav('screen-home');
+                    window.nav('screen-login');
                 }
-            } else {
+            } catch(e) {
+                console.log("Auth Error: Reverting to Login");
                 window.nav('screen-login');
             }
         });
