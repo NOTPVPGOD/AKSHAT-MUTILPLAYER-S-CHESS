@@ -117,6 +117,10 @@
         select:focus { border-color: var(--accent); }
 
         /* Admin UI Clean Design */
+        .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .admin-nav-btn { flex: 1; padding: 10px; background: #050507; border: 1px solid var(--border-subtle); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .admin-nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
         .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); padding: 15px 18px; border-radius: 12px; margin-bottom: 10px; }
         .player-row .info { display: flex; flex-direction: column; gap: 4px; }
         .player-row .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -261,9 +265,22 @@
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Create an account to join the multiplayer server.</div>
         <div class="menu-container" style="background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-subtle);">
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Select Profile Avatar</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <div class="avatar-option selected" onclick="window.selectAvatar('😎', this)">😎</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🐉', this)">🐉</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🚀', this)">🚀</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('🤖', this)">🤖</div>
+                    <div class="avatar-option" onclick="window.selectAvatar('💀', this)">💀</div>
+                </div>
+            </div>
+
             <input type="text" id="username-input" class="login-input" placeholder="Enter Username" maxlength="12">
             <input type="password" id="password-input" class="login-input" placeholder="Create Password" maxlength="20">
-            <button class="btn btn-primary" onclick="window.saveUsername()" style="margin-top: 6px; width: 100%;">Save & Continue</button>
+            <button class="btn btn-primary" onclick="window.saveUsername()" style="margin-top: 6px; width: 100%;">Continue</button>
+            <p id="auth-msg" style="color: var(--gold); font-size: 0.85rem; margin-top: 10px; text-align: center;"></p>
         </div>
     </div>
 
@@ -279,7 +296,7 @@
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
                 <button class="btn btn-secondary" onclick="window.openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
-                <button class="btn btn-secondary" onclick="alert('Global Leaderboards coming soon!')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
+                <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from server...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 2px;">
@@ -327,8 +344,8 @@
                 </select>
             </div>
             <div class="setting-row">
-                <label style="font-weight: 500; font-size: 0.9rem;">Change Name</label>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="window.changeName()">Edit Profile</button>
+                <label style="font-weight: 500; font-size: 0.9rem;">Account Action</label>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="window.logOut()">Sign Out</button>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.closeSettings()">Save & Close</button>
         </div>
@@ -342,19 +359,36 @@
                 <button class="btn-small" onclick="window.closeAdmin()">✕ Close</button>
             </div>
             
-            <div class="admin-toolbar">
-                <button class="btn-small btn-secondary" onclick="window.adminUnbanId()">🔓 Unban Specific ID</button>
-                <button class="btn-small btn-secondary" onclick="window.adminUnbanAll()" style="color: var(--success); border-color: rgba(16,185,129,0.3);">🌍 Global Unban</button>
-                <button class="btn-small" style="background: var(--gold); color: #000; border-color: var(--gold);" onclick="window.adminAnnounce()">📢 Global Announcement</button>
-                <button class="btn-small" onclick="window.adminChangePassword()" style="margin-left: auto;">🔑 Change Password</button>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted);">
-                <span>Players Online Now: <strong id="admin-player-count" style="color: var(--success);">0</strong></span>
-                <span>Total Unique Players Seen: <strong id="admin-total-seen" style="color: var(--accent);">0</strong></span>
+            <div class="admin-nav">
+                <button class="admin-nav-btn active" id="tab-btn-live" onclick="window.switchAdminTab('live')">🟢 Live Network</button>
+                <button class="admin-nav-btn" id="tab-btn-db" onclick="window.switchAdminTab('db')">🗄️ Database Accounts</button>
             </div>
 
-            <div id="admin-player-list" style="overflow-y: auto; flex-grow: 1; min-height: 300px; background: #050507; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 15px;"></div>
+            <!-- LIVE NETWORK TAB -->
+            <div id="admin-live-section">
+                <div class="admin-toolbar">
+                    <button class="btn-small btn-secondary" onclick="window.adminUnbanId()">🔓 Unban ID</button>
+                    <button class="btn-small btn-secondary" onclick="window.adminUnbanAll()" style="color: var(--success); border-color: rgba(16,185,129,0.3);">🌍 Global Unban</button>
+                    <button class="btn-small" style="background: var(--gold); color: #000; border-color: var(--gold);" onclick="window.adminAnnounce()">📢 Announce</button>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>Players Online Now: <strong id="admin-player-count" style="color: var(--success);">0</strong></span>
+                </div>
+
+                <div id="admin-player-list" style="overflow-y: auto; flex-grow: 1; min-height: 250px; background: #050507; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 15px;"></div>
+            </div>
+
+            <!-- DATABASE TAB -->
+            <div id="admin-db-section" style="display: none; display: flex; flex-direction: column; flex-grow: 1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>Total Accounts Registered: <strong id="admin-total-db-count" style="color: var(--accent);">Loading...</strong></span>
+                    <button class="btn-small" onclick="window.loadAllUsersForAdmin()">↻ Refresh</button>
+                </div>
+                <div id="admin-db-list" style="overflow-y: auto; flex-grow: 1; min-height: 250px; background: #050507; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 15px;">
+                    <div style="text-align:center; color:#6b7280;">Fetching from Firebase Database...</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -482,13 +516,11 @@
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
-        let playerName = localStorage.getItem('akshat_chess_user') || "";
-        let playerPass = localStorage.getItem('akshat_chess_userpass') || "";
-        let playerRank = localStorage.getItem('akshat_chess_rank') || "";
+        let playerName = "Player";
+        let playerRank = "";
         let oppName = "Opponent", oppRank = "";
         
         let livePlayers = {};
-        let allTimeSessionPlayers = new Set(); 
         let currentActivity = "Main Menu";
 
         /* =========================================
@@ -586,73 +618,14 @@
         }
 
         /* =========================================
-           BAN ENFORCEMENT PROTOCOL
+           AVATAR SELECTION
         ========================================= */
-        function checkBanStatus() {
-            let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
-            let banUntil = localStorage.getItem('akshat_chess_ban_until');
-
-            if (isBanned) {
-                if (banUntil && Date.now() > parseInt(banUntil)) {
-                    localStorage.removeItem('akshat_chess_banned');
-                    localStorage.removeItem('akshat_chess_ban_until');
-                    document.getElementById('ban-screen').style.display = 'none';
-                    return false;
-                } else {
-                    document.getElementById('ban-screen').style.display = 'flex';
-                    if (banUntil) {
-                        let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
-                        document.getElementById('ban-time-left').style.display = 'block';
-                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minutes.`;
-                    } else {
-                        document.getElementById('ban-time-left').style.display = 'none';
-                    }
-                    return true;
-                }
-            }
-            return false;
+        window.selectedAvatarIcon = "😎";
+        window.selectAvatar = function(icon, el) {
+            window.selectedAvatarIcon = icon;
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
         }
-
-        checkBanStatus();
-        banCheckTimer = setInterval(checkBanStatus, 15000); 
-
-        /* =========================================
-           BOOT & LOGIN LOGIC
-        ========================================= */
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const joinId = urlParams.get('join');
-
-            initNet();
-
-            setTimeout(() => {
-                const bar = document.getElementById('splash-bar');
-                const status = document.getElementById('splash-status');
-                if (bar) bar.style.width = '100%';
-                if (status) status.innerText = 'ONLINE SYSTEMS READY';
-
-                setTimeout(() => {
-                    document.getElementById('splash-screen').style.opacity = '0';
-                    setTimeout(() => { 
-                        document.getElementById('splash-screen').style.display = 'none'; 
-                        
-                        if(localStorage.getItem('akshat_chess_banned') === 'true') return;
-
-                        if(playerName === "" || playerPass === "") {
-                            document.getElementById('screen-login').classList.add('active');
-                        } else {
-                            window.updateWelcomeTag();
-                            if(joinId) {
-                                window.openLobby();
-                                setTimeout(() => window.joinRoom(joinId), 1000);
-                            } else {
-                                document.getElementById('screen-home').classList.add('active');
-                            }
-                        }
-                    }, 800);
-                }, 1100);
-            }, 300);
-        });
 
         window.getBadgeHTML = function(rank) {
             if (!rank) return "";
@@ -664,35 +637,8 @@
         }
 
         window.updateWelcomeTag = function() {
-            let badge = window.getBadgeHTML(playerRank);
-            document.getElementById('welcome-text').innerHTML = `Connected as <strong>${playerName}</strong> ${badge}`;
-        }
-
-        window.saveUsername = function() {
-            let uInput = document.getElementById('username-input').value.trim();
-            let pInput = document.getElementById('password-input').value.trim();
-            
-            if(uInput.length >= 3 && pInput.length >= 4) {
-                playerName = uInput;
-                playerPass = pInput;
-                localStorage.setItem('akshat_chess_user', playerName);
-                localStorage.setItem('akshat_chess_userpass', playerPass);
-                
-                window.updateWelcomeTag();
-                window.nav('screen-home');
-                
-                let ctx = window.getAudioCtx();
-                if (ctx && ctx.state === 'suspended') ctx.resume();
-            } else {
-                alert("Validation error: Username must be 3+ characters and Password 4+ characters.");
-            }
-        }
-
-        window.changeName = function() {
-            window.closeSettings();
-            document.getElementById('username-input').value = playerName;
-            document.getElementById('password-input').value = playerPass;
-            window.nav('screen-login');
+            let badge = window.getBadgeHTML(window.playerRank);
+            document.getElementById('welcome-text').innerHTML = `Connected as <strong>${window.playerName}</strong> ${badge}`;
         }
 
         /* =========================================
@@ -737,9 +683,28 @@
         function openAdmin() {
             document.getElementById('admin-modal').style.display = 'flex';
             window.renderAdminDashboard();
+            if (window.loadAllUsersForAdmin) {
+                window.loadAllUsersForAdmin(); // Fetch offline Firebase accounts
+            }
         }
 
         window.closeAdmin = function() { document.getElementById('admin-modal').style.display = 'none'; }
+
+        window.switchAdminTab = function(tab) {
+            document.getElementById('tab-btn-live').classList.remove('active');
+            document.getElementById('tab-btn-db').classList.remove('active');
+            
+            if(tab === 'live') {
+                document.getElementById('tab-btn-live').classList.add('active');
+                document.getElementById('admin-live-section').style.display = 'block';
+                document.getElementById('admin-db-section').style.display = 'none';
+            } else {
+                document.getElementById('tab-btn-db').classList.add('active');
+                document.getElementById('admin-live-section').style.display = 'none';
+                document.getElementById('admin-db-section').style.display = 'flex';
+                if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
+            }
+        }
 
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') { promptAdmin(); }
@@ -752,7 +717,7 @@
         let activeSpectateId = null;
 
         window.spectatePlayer = function(id) {
-            if (!livePlayers[id] || !livePlayers[id].fen) { alert("Player is not in an active match."); return; }
+            if (!livePlayers[id] || !livePlayers[id].fen) { alert("Player board state not available yet."); return; }
             activeSpectateId = id;
             document.getElementById('spectate-modal').style.display = 'flex';
             document.getElementById('spec-name').innerText = livePlayers[id].name;
@@ -808,13 +773,13 @@
             let count = 0;
 
             for (let id in livePlayers) {
-                if (now - livePlayers[id].time < 12000) {
+                if (now - livePlayers[id].time < 15000) {
                     count++;
                     const p = livePlayers[id];
                     const isSelf = (id === mId) ? " <span style='font-size: 0.8rem; color:#6b7280;'>(You)</span>" : "";
                     
                     let watchBtn = (p.fen && p.activity.includes("Match")) 
-                        ? `<button class="btn-small btn-watch" onclick="window.spectatePlayer('${id}')">👁️ Watch Match</button>` 
+                        ? `<button class="btn-small btn-watch" onclick="window.spectatePlayer('${id}')">👁️ Watch Live</button>` 
                         : '';
 
                     html += `
@@ -833,8 +798,7 @@
             }
 
             document.getElementById('admin-player-count').innerText = count;
-            document.getElementById('admin-total-seen').innerText = allTimeSessionPlayers.size;
-            list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">Scanning for active players...</div>' : html;
+            list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">No players active right now.</div>' : html;
         }
 
         window.adminBanOptions = function(targetId, targetName) {
@@ -870,21 +834,8 @@
             try {
                 const o = ctx.createOscillator(), g = ctx.createGain();
                 o.connect(g); g.connect(ctx.destination);
-                if (t === 'm') { 
-                    o.frequency.setValueAtTime(320, ctx.currentTime); 
-                    o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08); 
-                    g.gain.setValueAtTime(0.25, ctx.currentTime); 
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); 
-                    o.start(); o.stop(ctx.currentTime + 0.08); 
-                }
-                if (t === 'c') { 
-                    o.type = 'triangle'; 
-                    o.frequency.setValueAtTime(250, ctx.currentTime); 
-                    o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.12); 
-                    g.gain.setValueAtTime(0.3, ctx.currentTime); 
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12); 
-                    o.start(); o.stop(ctx.currentTime + 0.12); 
-                }
+                if (t === 'm') { o.frequency.setValueAtTime(320, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08); g.gain.setValueAtTime(0.25, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); o.start(); o.stop(ctx.currentTime + 0.08); }
+                if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.12); g.gain.setValueAtTime(0.3, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12); o.start(); o.stop(ctx.currentTime + 0.12); }
             } catch(e) {}
         }
 
@@ -894,13 +845,7 @@
             if(!ctx) return;
             try {
                 const o = ctx.createOscillator(), g = ctx.createGain();
-                o.type = 'sine'; 
-                o.frequency.setValueAtTime(580, ctx.currentTime);
-                o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.07);
-                g.gain.setValueAtTime(0.15, ctx.currentTime); 
-                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.07);
-                o.connect(g); g.connect(ctx.destination);
-                o.start(); o.stop(ctx.currentTime + 0.07);
+                o.type = 'sine'; o.frequency.setValueAtTime(580, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.07); g.gain.setValueAtTime(0.15, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.07);
             } catch(e) {}
         }
 
@@ -937,7 +882,6 @@
            ROUTER & NAVIGATION
         ========================================= */
         window.nav = function(id) { 
-            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             $('.screen').removeClass('active'); 
             $('#' + id).addClass('active'); 
             
@@ -970,17 +914,15 @@
         }
 
         window.sendPresence = function() {
-            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             if (mq && mq.connected) {
-                
-                // IMPORTANT: Send the live FEN so Admins can watch
+                // IMPERATIVE FIX: Grab the current board layout continuously for spectators.
                 let currentFen = null;
-                if(gm && !gm.game_over() && currentActivity.includes("Match")) {
+                if(gm && currentActivity.includes("Match")) {
                     currentFen = gm.fen();
                 }
 
                 mq.publish('nx_presence_v1', JSON.stringify({
-                    id: mId, name: playerName || "Anonymous", rank: playerRank, activity: currentActivity, time: Date.now(), fen: currentFen
+                    id: mId, name: window.playerName || "Anonymous", rank: window.playerRank, activity: currentActivity, time: Date.now(), fen: currentFen
                 }));
             }
         }
@@ -1053,7 +995,10 @@
 
         window.startBrd = function(or) {
             gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(window.tick, 1000);
-            $('#plr-name').html(playerName + ' ' + window.getBadgeHTML(playerRank));
+            
+            let pHTML = window.getBadgeHTML(window.playerRank);
+            $('#plr-name').html(window.playerName + ' ' + pHTML);
+            
             window.drawUI();
             selectedSq = null;
             window.sendPresence(); 
@@ -1129,7 +1074,7 @@
             $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
             window.drawUI(); 
             
-            // Instantly sync FEN to Spectators
+            // CRITICAL FIX: Send presence immediately after a move to sync Spectator screen live!
             window.sendPresence();
 
             if (eng) { eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 100'); }
@@ -1224,12 +1169,10 @@
                 mq.subscribe(`nx_inbox_${mId}`);
                 mq.subscribe('nx_admin_cmd');
                 
-                if(localStorage.getItem('akshat_chess_banned') !== 'true') {
-                    mq.subscribe('nx_presence_v1');
-                    clearInterval(presenceTimer);
-                    presenceTimer = setInterval(window.sendPresence, 3000);
-                    window.sendPresence();
-                }
+                mq.subscribe('nx_presence_v1');
+                clearInterval(presenceTimer);
+                presenceTimer = setInterval(window.sendPresence, 3000);
+                window.sendPresence();
             });
 
             mq.on('message', (top, msg) => {
@@ -1239,7 +1182,9 @@
                     livePlayers[d.id] = { name: d.name, rank: d.rank, activity: d.activity, time: d.time || Date.now(), fen: d.fen };
                     allTimeSessionPlayers.add(d.id); 
                     
-                    if ($('#admin-modal').is(':visible')) window.renderAdminDashboard();
+                    if ($('#admin-modal').is(':visible') && document.getElementById('admin-live-section').style.display !== 'none') {
+                        window.renderAdminDashboard();
+                    }
 
                     // ADMIN SPECTATOR SYNC
                     if (activeSpectateId === d.id) {
@@ -1252,7 +1197,7 @@
                     }
                 }
 
-                // ADMIN ENFORCEMENT COMMANDS
+                // ADMIN COMMANDS
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
                     if (d.cmd === 'announce') {
                         document.getElementById('announcement-text').innerText = d.text;
@@ -1260,31 +1205,35 @@
                         window.playMsgSfx();
                     }
                     if (d.cmd === 'ban' && d.target === mId) {
-                        localStorage.setItem('akshat_chess_banned', 'true');
-                        if (d.duration && d.duration > 0) {
-                            let expiryTime = Date.now() + (d.duration * 60000);
-                            localStorage.setItem('akshat_chess_ban_until', expiryTime.toString());
-                        } else {
-                            localStorage.removeItem('akshat_chess_ban_until');
+                        // Mark user banned locally AND in Firebase
+                        if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
+                            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true });
+                            });
                         }
                         if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-                        checkBanStatus();
+                        document.getElementById('ban-screen').style.display = 'flex';
                     }
                     if (d.cmd === 'unban' && (d.target === mId || d.target === 'ALL')) {
-                        localStorage.removeItem('akshat_chess_banned');
-                        localStorage.removeItem('akshat_chess_ban_until');
+                        if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
+                            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: false });
+                            });
+                        }
                         alert("An administrator has removed your ban. Reloading system...");
                         window.location.reload();
                     }
                     if (d.cmd === 'rank' && d.target === mId) {
-                        playerRank = d.rank;
-                        localStorage.setItem('akshat_chess_rank', playerRank);
+                        window.playerRank = d.rank;
+                        if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
+                            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { rank: d.rank });
+                            });
+                        }
                         window.updateWelcomeTag();
                         alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
                     }
                 }
-
-                if(localStorage.getItem('akshat_chess_banned') === 'true') return;
 
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
@@ -1304,7 +1253,7 @@
                         }
                     }
                     if(d.a === 'who' && currentActivity === "Hosting a Match Room") {
-                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
+                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
                     }
                 }
 
@@ -1316,7 +1265,7 @@
                         oppName = d.n ? d.n : "Challenger";
                         oppRank = d.r || "";
                         currentActivity = "Online Match vs " + oppName;
-                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName, rk:playerRank}));
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:window.playerName, rk:window.playerRank}));
                         $('#opp-avatar').text('🌐');
                         $('#opp-name').html(oppName + ' ' + window.getBadgeHTML(oppRank));
                         window.joinNet('white'); 
@@ -1377,7 +1326,7 @@
 
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
             }, 1500);
         }
 
@@ -1397,7 +1346,7 @@
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:window.playerName, r:window.playerRank}));
             }, 1000);
         }
 
@@ -1409,6 +1358,183 @@
         }
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
+    </script>
+
+    <!-- SERVER LOGIC (FIREBASE INTEGRATION FOR PERMANENT DATA) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
+            authDomain: "akshat-chess.firebaseapp.com",
+            projectId: "akshat-chess",
+            storageBucket: "akshat-chess.firebasestorage.app",
+            messagingSenderId: "821222063303",
+            appId: "1:821222063303:web:79945a324b70b0eed592e2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.fbAuth = auth;
+        window.fbDb = db;
+
+        // Admin Database User Fetching
+        window.loadAllUsersForAdmin = async () => {
+            const listEl = document.getElementById('admin-db-list');
+            const countEl = document.getElementById('admin-total-db-count');
+            listEl.innerHTML = '<div style="text-align:center; color:#6b7280;">Fetching accounts from Firebase Database...</div>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "users"));
+                let html = "";
+                let count = 0;
+                
+                querySnapshot.forEach((doc) => {
+                    count++;
+                    const data = doc.data();
+                    let badge = window.getBadgeHTML(data.rank);
+                    let banTag = data.isBanned ? '<span style="color: var(--danger); font-size: 0.75rem; font-weight: bold; margin-left: 10px;">BANNED</span>' : '<span style="color: var(--success); font-size: 0.75rem; font-weight: bold; margin-left: 10px;">ACTIVE</span>';
+                    
+                    html += `
+                        <div class="player-row" style="background: rgba(255,255,255,0.02);">
+                            <div class="info">
+                                <div style="font-size: 1.15rem; font-weight: bold; display: flex; align-items: center;">
+                                    <span style="font-size: 1.5rem; margin-right: 8px;">${data.avatar || '😎'}</span> 
+                                    ${data.username} ${badge} ${banTag}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Database ID: ${doc.id}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if(count === 0) {
+                    listEl.innerHTML = '<div style="text-align:center; color:#6b7280; padding: 25px;">Database is currently empty.</div>';
+                } else {
+                    listEl.innerHTML = html;
+                }
+                countEl.innerText = count;
+            } catch (err) {
+                console.log(err);
+                listEl.innerHTML = '<div style="text-align:center; color:var(--danger); padding: 25px;">Error: Database secured or offline. Ensure Firebase Firestore rules allow reading.</div>';
+                countEl.innerText = "Error";
+            }
+        };
+
+        window.saveUsername = async () => {
+            const uInput = document.getElementById('username-input').value.trim();
+            const pInput = document.getElementById('password-input').value.trim();
+            const msg = document.getElementById('auth-msg');
+            
+            if(uInput.length < 3 || pInput.length < 4) {
+                msg.innerText = "Username 3+ chars, Password 4+ chars.";
+                return;
+            }
+
+            msg.innerText = "Connecting to server...";
+            const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
+
+            try {
+                await signInWithEmailAndPassword(auth, fakeEmail, pInput);
+                msg.innerText = "Logged in successfully!";
+                
+                window.playerName = uInput;
+                document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                window.updateWelcomeTag();
+                window.nav('screen-home');
+                
+                let ctx = window.getAudioCtx();
+                if (ctx && ctx.state === 'suspended') ctx.resume();
+
+            } catch (error) {
+                try {
+                    const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
+                    
+                    try {
+                        await setDoc(doc(db, "users", userCred.user.uid), {
+                            username: uInput,
+                            avatar: window.selectedAvatarIcon || "😎",
+                            elo: 1200,
+                            rank: "",
+                            isBanned: false
+                        });
+                    } catch (dbErr) {
+                        console.log("Database secured. Using local data.");
+                    }
+
+                    msg.innerText = "Account created!";
+                    window.playerName = uInput;
+                    document.getElementById('plr-avatar').innerText = window.selectedAvatarIcon || "😎";
+                    window.updateWelcomeTag();
+                    window.nav('screen-home');
+                    
+                    let ctx = window.getAudioCtx();
+                    if (ctx && ctx.state === 'suspended') ctx.resume();
+
+                } catch(regErr) {
+                    msg.innerText = "Error: Invalid credentials or name taken.";
+                }
+            }
+        };
+
+        window.logOut = () => {
+            signOut(auth).then(() => {
+                window.playerName = "";
+                window.playerRank = "";
+                window.nav('screen-login');
+                window.closeSettings();
+            });
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            try {
+                if (user) {
+                    window.playerName = user.email.split('@')[0];
+                    window.playerRank = "";
+                    window.playerAvatar = window.selectedAvatarIcon || "😎";
+                    
+                    try {
+                        const docSnap = await getDoc(doc(db, "users", user.uid));
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            
+                            if(data.isBanned) {
+                                document.getElementById('ban-screen').style.display = 'flex';
+                                signOut(auth);
+                                return;
+                            }
+
+                            window.playerName = data.username || window.playerName;
+                            window.playerRank = data.rank || "";
+                            window.playerAvatar = data.avatar || "😎";
+                        }
+                    } catch (err) {
+                        console.log("Using local data connection.");
+                    }
+
+                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                    window.updateWelcomeTag();
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const joinId = urlParams.get('join');
+                    if(joinId) {
+                        window.openLobby();
+                        setTimeout(() => window.joinRoom(joinId), 1000);
+                    } else {
+                        window.nav('screen-home');
+                    }
+                } else {
+                    window.nav('screen-login');
+                }
+            } catch(e) {
+                console.log("Auth Error: Reverting to Login");
+                window.nav('screen-login');
+            }
+        });
     </script>
 </body>
 </html>
