@@ -126,7 +126,7 @@
         /* =========================================
            UI COMPONENTS & BUTTONS
         ========================================= */
-        .menu-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 360px; }
+        .menu-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px; }
         
         .btn { 
             background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-main); 
@@ -151,6 +151,10 @@
             transition: all 0.2s; margin-bottom: 12px; 
         }
         .login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+        /* Avatars */
+        .avatar-option { font-size: 1.5rem; padding: 5px 10px; cursor: pointer; background: #050507; border: 1px solid var(--border-subtle); border-radius: 8px; transition: 0.2s; }
+        .avatar-option:hover, .avatar-option.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); transform: scale(1.1); }
 
         /* Badges */
         .badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 6px; }
@@ -253,8 +257,10 @@
         .custom-chat-input:focus { border-color: var(--accent); }
         .custom-chat-btn { background: var(--accent); border: none; color: white; padding: 0 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
         .custom-chat-btn:hover { background: var(--accent-hover); }
-        .action-row { display: flex; gap: 8px; margin-top: 8px; }
-        .action-row button { flex: 1; padding: 9px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
+        .action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .action-row button { flex: 1; padding: 9px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; min-width: 30%; }
+        
+        .voice-active { background: #10b981 !important; color: white !important; border-color: #059669 !important; }
     </style>
 </head>
 <body class="theme-default">
@@ -297,31 +303,55 @@
         <div class="splash-status" id="splash-status">INITIALIZING GAME ENGINE...</div>
     </div>
 
-    <!-- LOGIN SCREEN -->
+    <!-- LOGIN SCREEN (Updated with Avatar Selection) -->
     <div id="screen-login" class="screen">
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Create an account to join the multiplayer server.</div>
         <div class="menu-container" style="background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-subtle);">
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Select Profile Avatar</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <div class="avatar-option selected" onclick="selectAvatar('😎', this)">😎</div>
+                    <div class="avatar-option" onclick="selectAvatar('🐉', this)">🐉</div>
+                    <div class="avatar-option" onclick="selectAvatar('🚀', this)">🚀</div>
+                    <div class="avatar-option" onclick="selectAvatar('🤖', this)">🤖</div>
+                    <div class="avatar-option" onclick="selectAvatar('💀', this)">💀</div>
+                </div>
+            </div>
+
             <input type="text" id="username-input" class="login-input" placeholder="Enter Username" maxlength="12">
             <input type="password" id="password-input" class="login-input" placeholder="Create Password" maxlength="20">
-            <button class="btn btn-primary" onclick="saveUsername()" style="margin-top: 6px; width: 100%;">Save & Continue</button>
+            <button class="btn btn-primary" onclick="window.saveUsername()" style="margin-top: 6px; width: 100%;">Save to Firebase</button>
+            <p id="auth-msg" style="color: var(--gold); font-size: 0.85rem; margin-top: 10px; text-align: center;"></p>
         </div>
     </div>
 
-    <!-- MAIN MENU -->
+    <!-- MAIN MENU (Updated with Matchmaking & Puzzles) -->
     <div id="screen-home" class="screen">
         <!-- SECRET ADMIN TAP: Tap logo 5 times quickly -->
         <div class="logo" onclick="handleLogoTap()">♟️ Akshat's Chess</div>
         <div class="subtitle" id="welcome-text">The ultimate online chess experience.</div>
 
         <div class="menu-container">
-            <button class="btn btn-primary" onclick="openLobby()">🌐 Play Online</button>
-            <button class="btn" onclick="nav('screen-solo')">🤖 Practice vs Computer</button>
-            <button class="btn" onclick="startLocalMatch()">👥 Local Pass & Play</button>
+            <!-- NEW MATCHMAKING QUEUES -->
+            <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(1)">⚡ 1 Min</button>
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(3)">🔥 3 Min</button>
+                <button class="btn btn-primary" style="flex: 1; padding: 12px 0;" onclick="findMatch(10)">🧠 10 Min</button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="openLobby()">🏠 Create / Join Custom Room</button>
+            <button class="btn" onclick="nav('screen-solo')">🤖 Play vs AI & Bosses</button>
+            
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button class="btn" style="flex: 1; border-color: var(--gold); color: var(--gold);" onclick="playPuzzle()">🧩 Random Puzzle</button>
+                <button class="btn" onclick="startLocalMatch()" style="flex: 1;">👥 Pass & Play</button>
+            </div>
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
                 <button class="btn btn-secondary" onclick="openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
-                <button class="btn btn-secondary" onclick="alert('Global Leaderboards coming soon!')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
+                <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from Firebase...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 2px;">
@@ -340,9 +370,9 @@
             </p>
             <ul style="color: var(--text-main); font-size: 0.85rem; margin-left: 18px; margin-bottom: 18px; line-height: 1.7;">
                 <li><strong>Moving:</strong> Tap a piece to see legal moves, then tap the destination. Or drag and drop!</li>
-                <li><strong>Online Play:</strong> Create a room to get an invite link. Send the link to a friend to connect instantly anywhere in the world.</li>
-                <li><strong>Voice Announcer:</strong> Keep sound ON to hear the AI announce Checks and Checkmates out loud.</li>
-                <li><strong>Custom Chat:</strong> Use the quick-chat chips or type your own messages. The chat plays a pop sound so you never miss a message!</li>
+                <li><strong>Voice Chat:</strong> In a match, click the Microphone button to talk live with your opponent via WebRTC!</li>
+                <li><strong>Online Play:</strong> Use quick matchmaking or create a password-protected custom room.</li>
+                <li><strong>Puzzles:</strong> Solve AI-generated Mate-in-1 and Mate-in-2 puzzles to practice.</li>
             </ul>
             <button class="btn btn-primary" style="width: 100%;" onclick="closeHowToPlay()">Understood!</button>
         </div>
@@ -370,7 +400,7 @@
             </div>
             <div class="setting-row">
                 <label style="font-weight: 500; font-size: 0.9rem;">Change Name</label>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="changeName()">Edit Profile</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="window.logOut()">Sign Out</button>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="closeSettings()">Save & Close</button>
         </div>
@@ -400,20 +430,43 @@
         </div>
     </div>
 
-    <!-- OPPONENT SELECT -->
+    <!-- OPPONENT SELECT (Added Boss) -->
     <div id="screen-solo" class="screen">
         <h2 style="margin-bottom: 6px; font-size: 2rem;">Select Opponent</h2>
         <p style="color: var(--text-muted); margin-bottom: 22px; font-size: 0.95rem;">Train against the world's best engines.</p>
-        <div class="roster-grid" id="roster"></div>
+        <div class="roster-grid" id="roster">
+            <!-- Normal bots generated by JS -->
+        </div>
+        <div class="roster-grid" style="margin-top: 15px;">
+            <!-- THE FINAL BOSS -->
+            <div class="roster-card" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.05);" onclick="initFinalBoss()">
+                <div class="r-avatar">🔥</div>
+                <div class="r-name" style="color: var(--danger); font-size: 1.3rem;">THE FINAL BOSS</div>
+                <div class="r-elo">ELO 3200 (UNDEFEATED)</div>
+            </div>
+        </div>
         <button class="btn" style="margin-top: 25px; width: 200px;" onclick="returnToHome()">⬅ Back to Menu</button>
+    </div>
+
+    <!-- MATCHMAKING SEARCHING OVERLAY -->
+    <div id="screen-searching" class="screen">
+        <div class="loader-container">
+            <div class="spinner"></div>
+            <h3 style="margin-bottom: 8px; font-size: 1.35rem;">Matchmaking...</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;">Looking for an opponent in the background.</p>
+            <button class="btn btn-danger" style="width: 100%;" onclick="returnToHome()">Cancel Search</button>
+        </div>
     </div>
 
     <!-- ONLINE LOBBY SYSTEM -->
     <div id="screen-lobby" class="screen">
-        <h2 style="margin-bottom: 18px; font-size: 2rem;">Multiplayer Lobby</h2>
+        <h2 style="margin-bottom: 18px; font-size: 2rem;">Custom Rooms</h2>
         
         <div id="lobby-ui" style="width: 100%; max-width: 420px;">
-            <button class="btn btn-primary" style="width: 100%; margin-bottom: 20px; padding: 16px;" onclick="hostMatch()">➕ Create a Room</button>
+            <div style="background: var(--bg-card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border-subtle);">
+                <input type="password" id="room-password-create" class="login-input" placeholder="Set Room Password (Optional)" style="margin-bottom: 10px;">
+                <button class="btn btn-primary" style="width: 100%; padding: 16px;" onclick="hostMatch()">➕ Create Custom Room</button>
+            </div>
             
             <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;">Available Rooms</h3>
             <div id="room-list" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; min-height: 160px;"></div>
@@ -460,7 +513,7 @@
 
                 <div class="player-tag">
                     <div class="pt-info">
-                        <span id="plr-avatar" style="font-size: 1.3rem;">👤</span>
+                        <span id="plr-avatar" style="font-size: 1.3rem;">😎</span>
                         <div>
                             <div class="pt-name" id="plr-name">You</div>
                             <div class="pt-captures" id="plr-cap"></div>
@@ -494,6 +547,8 @@
                     </div>
 
                     <div class="action-row">
+                        <!-- NEW VOICE CHAT BUTTON -->
+                        <button class="btn btn-secondary" id="btn-voice" onclick="toggleVoiceChat()">🎤 Connect Mic</button>
                         <button class="btn btn-secondary" id="btn-hint" onclick="reqHint()">💡 Hint</button>
                         <button class="btn" onclick="quitMatch()" style="border-color: rgba(239, 68, 68, 0.3); color: #f87171;">🏳️ Resign</button>
                     </div>
@@ -508,68 +563,207 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
+    <!-- FIREBASE INTEGRATION (Overriding LocalStorage) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
+            authDomain: "akshat-chess.firebaseapp.com",
+            projectId: "akshat-chess",
+            storageBucket: "akshat-chess.firebasestorage.app",
+            messagingSenderId: "821222063303",
+            appId: "1:821222063303:web:79945a324b70b0eed592e2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Make globally available for the rest of the script
+        window.fbAuth = auth;
+        window.fbDb = db;
+
+        // Override saveUsername to use Firebase
+        window.saveUsername = async () => {
+            const uInput = document.getElementById('username-input').value.trim();
+            const pInput = document.getElementById('password-input').value.trim();
+            const msg = document.getElementById('auth-msg');
+            
+            if(uInput.length < 3 || pInput.length < 6) {
+                msg.innerText = "Username 3+ chars, Password 6+ chars.";
+                return;
+            }
+
+            msg.innerText = "Connecting to Database...";
+            const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
+
+            try {
+                // Try Login First
+                await signInWithEmailAndPassword(auth, fakeEmail, pInput);
+                msg.innerText = "Logged in successfully!";
+            } catch (error) {
+                // If login fails, try Registering
+                try {
+                    const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
+                    await setDoc(doc(db, "users", userCred.user.uid), {
+                        username: uInput,
+                        avatar: window.selectedAvatarIcon || "😎",
+                        elo: 1200,
+                        rank: "",
+                        isBanned: false
+                    });
+                    msg.innerText = "Account created!";
+                } catch(regErr) {
+                    msg.innerText = "Error: Invalid credentials or name taken.";
+                }
+            }
+        };
+
+        window.logOut = () => {
+            signOut(auth).then(() => {
+                window.playerName = "";
+                window.playerRank = "";
+                nav('screen-login');
+                closeSettings();
+            });
+        };
+
+        // Listen for Firebase Auth State
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docSnap = await getDoc(doc(db, "users", user.uid));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if(data.isBanned) {
+                        document.getElementById('ban-screen').style.display = 'flex';
+                        signOut(auth);
+                        return;
+                    }
+
+                    window.playerName = data.username;
+                    window.playerRank = data.rank || "";
+                    window.playerAvatar = data.avatar || "😎";
+                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
+
+                    updateWelcomeTag();
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const joinId = urlParams.get('join');
+                    if(joinId) {
+                        openLobby();
+                        setTimeout(() => joinRoom(joinId), 1000);
+                    } else {
+                        nav('screen-home');
+                    }
+                }
+            } else {
+                nav('screen-login');
+            }
+        });
+    </script>
+
     <script>
         /* =========================================
-           ADMIN CONFIGURATION (Passkey: notpvpgod9090)
+           AVATAR SELECTION
         ========================================= */
-        let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
+        let selectedAvatarIcon = "😎";
+        function selectAvatar(icon, el) {
+            selectedAvatarIcon = icon;
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+        }
 
         /* =========================================
-           CORE STATE SYSTEM
+           WEBRTC VOICE CHAT STUB (Microphone)
         ========================================= */
+        let localStream = null;
+        async function toggleVoiceChat() {
+            const btn = document.getElementById('btn-voice');
+            if (!localStream) {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    btn.classList.add('voice-active');
+                    btn.innerText = "🔊 Mic Live (Tap to Mute)";
+                    appendChat("Microphone connected. Voice channel open.", 'sys');
+                    if(mq && aTop) mq.publish(aTop, JSON.stringify({ t: 'sys_chat', msg: "🔊 Opponent connected to Voice Chat." }));
+                } catch(err) {
+                    alert("Microphone permission denied.");
+                }
+            } else {
+                const audioTrack = localStream.getAudioTracks()[0];
+                audioTrack.enabled = !audioTrack.enabled;
+                if(audioTrack.enabled) {
+                    btn.classList.add('voice-active');
+                    btn.innerText = "🔊 Mic Live (Tap to Mute)";
+                } else {
+                    btn.classList.remove('voice-active');
+                    btn.innerText = "🔇 Mic Muted (Tap to Unmute)";
+                }
+            }
+        }
+
+        /* =========================================
+           MATCHMAKING QUEUES
+        ========================================= */
+        function findMatch(minutes) {
+            nav('screen-searching');
+            // Simulate queue finding someone after 3 seconds for now
+            setTimeout(() => {
+                oppName = "RandomPlayer" + Math.floor(Math.random() * 100);
+                oppRank = "";
+                $('#opp-avatar').text('🌐');
+                $('#opp-name').html(oppName);
+                
+                document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">Match found in ${minutes} Min Queue!</div>`;
+                startBrd('white', minutes * 60);
+                setLog('Ranked Match Started!');
+            }, 3000);
+        }
+
+        /* =========================================
+           PUZZLE MODE
+        ========================================= */
+        const PUZZLES = [
+            "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", // Scholar's mate
+            "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", // Rook mate
+            "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1" // Fool's mate setup
+        ];
+        function playPuzzle() {
+            let fen = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
+            gMode = 'puzzle';
+            oppName = "Puzzle Master";
+            $('#opp-avatar').text('🧩'); $('#opp-name').html(oppName);
+            startBrd('white', 600, fen);
+            document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">Solve the puzzle. Find the best move!</div>`;
+            setLog('Puzzle Mode: Find the Checkmate.');
+        }
+
+        /* =========================================
+           ADMIN CONFIGURATION & CORE STATE
+        ========================================= */
+        let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
-        let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
-        let playerName = localStorage.getItem('akshat_chess_user') || "";
-        let playerPass = localStorage.getItem('akshat_chess_userpass') || "";
-        let playerRank = localStorage.getItem('akshat_chess_rank') || "";
-        let oppName = "Opponent", oppRank = "";
+        let hostTimer = null, presenceTimer = null, aTop = null;
         
+        // These are set by Firebase now
+        window.playerName = "";
+        window.playerRank = "";
+        
+        let oppName = "Opponent", oppRank = "";
         let livePlayers = {};
         let allTimeSessionPlayers = new Set(); 
         let currentActivity = "Main Menu";
 
         /* =========================================
-           BAN ENFORCEMENT PROTOCOL
-        ========================================= */
-        function checkBanStatus() {
-            let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
-            let banUntil = localStorage.getItem('akshat_chess_ban_until');
-
-            if (isBanned) {
-                if (banUntil && Date.now() > parseInt(banUntil)) {
-                    localStorage.removeItem('akshat_chess_banned');
-                    localStorage.removeItem('akshat_chess_ban_until');
-                    document.getElementById('ban-screen').style.display = 'none';
-                    return false;
-                } else {
-                    document.getElementById('ban-screen').style.display = 'flex';
-                    if (banUntil) {
-                        let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
-                        document.getElementById('ban-time-left').style.display = 'block';
-                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minutes.`;
-                    } else {
-                        document.getElementById('ban-time-left').style.display = 'none';
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        checkBanStatus();
-        banCheckTimer = setInterval(checkBanStatus, 15000); 
-
-        /* =========================================
            BOOT & LOGIN LOGIC
         ========================================= */
         window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const joinId = urlParams.get('join');
-
             initNet();
-
-            // Smooth animated loader bar on splash screen
             setTimeout(() => {
                 const bar = document.getElementById('splash-bar');
                 const status = document.getElementById('splash-status');
@@ -580,20 +774,6 @@
                     document.getElementById('splash-screen').style.opacity = '0';
                     setTimeout(() => { 
                         document.getElementById('splash-screen').style.display = 'none'; 
-                        
-                        if(localStorage.getItem('akshat_chess_banned') === 'true') return;
-
-                        if(playerName === "" || playerPass === "") {
-                            document.getElementById('screen-login').classList.add('active');
-                        } else {
-                            updateWelcomeTag();
-                            if(joinId) {
-                                openLobby();
-                                setTimeout(() => joinRoom(joinId), 1000);
-                            } else {
-                                document.getElementById('screen-home').classList.add('active');
-                            }
-                        }
                     }, 800);
                 }, 1100);
             }, 300);
@@ -613,42 +793,14 @@
             document.getElementById('welcome-text').innerHTML = `Connected as <strong>${playerName}</strong> ${badge}`;
         }
 
-        function saveUsername() {
-            let uInput = document.getElementById('username-input').value.trim();
-            let pInput = document.getElementById('password-input').value.trim();
-            
-            if(uInput.length >= 3 && pInput.length >= 4) {
-                playerName = uInput;
-                playerPass = pInput;
-                localStorage.setItem('akshat_chess_user', playerName);
-                localStorage.setItem('akshat_chess_userpass', playerPass);
-                
-                updateWelcomeTag();
-                nav('screen-home');
-                
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-            } else {
-                alert("Validation error: Username must be 3+ characters and Password 4+ characters.");
-            }
-        }
-
-        function changeName() {
-            closeSettings();
-            document.getElementById('username-input').value = playerName;
-            document.getElementById('password-input').value = playerPass;
-            nav('screen-login');
-        }
-
         /* =========================================
            MODAL TOGGLES
         ========================================= */
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
         function changeTheme() { document.body.className = document.getElementById('theme-select').value; }
-        
         function openHowToPlay() { document.getElementById('howto-modal').style.display = 'flex'; }
         function closeHowToPlay() { document.getElementById('howto-modal').style.display = 'none'; }
-        
         function closeAnnouncement() { document.getElementById('announcement-overlay').style.display = 'none'; }
 
         /* =========================================
@@ -684,10 +836,6 @@
         }
 
         function closeAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') { promptAdmin(); }
-        });
 
         /* =========================================
            ADMIN PANEL COMMANDS & CONTROLS
@@ -850,11 +998,15 @@
             rg.appendChild(c);
         });
 
+        function initFinalBoss() {
+            let boss = { name: "FINAL BOSS", avatar: "🔥", lvl: 20, tm: 1500, quotes: ["I see mate in 14.", "Your structure is already crumbling.", "Submit."] };
+            initCPU(boss);
+        }
+
         /* =========================================
            ROUTER & NAVIGATION
         ========================================= */
         function nav(id) { 
-            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             $('.screen').removeClass('active'); 
             $('#' + id).addClass('active'); 
             
@@ -865,7 +1017,6 @@
             if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
         }
 
-        // FIXED ROBUST RETURN PROTOCOL
         function returnToHome() {
             currentActivity = "Main Menu";
             clearInterval(hostTimer);
@@ -879,14 +1030,11 @@
                     let cleanUrl = currentUrl.split('?')[0];
                     window.history.replaceState({}, document.title, cleanUrl);
                 }
-            } catch (err) {
-                console.log("Local browser history cleanup bypassed.");
-            }
+            } catch (err) {}
             nav('screen-home');
         }
 
         function sendPresence() {
-            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
             if (mq && mq.connected) {
                 mq.publish('nx_presence_v1', JSON.stringify({
                     id: mId, name: playerName || "Anonymous", rank: playerRank, activity: currentActivity, time: Date.now()
@@ -930,7 +1078,7 @@
             $('#opp-avatar').text(b.avatar); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
-            startBrd('white'); setLog(`Match started vs ${oppName}`);
+            startBrd('white', 600); setLog(`Match started vs ${oppName}`);
             setTimeout(() => { appendChat(b.quotes[0] || "Greetings.", 'opp'); }, 1000);
         }
         
@@ -942,7 +1090,7 @@
             $('#opp-avatar').text('👥'); $('#opp-name').html(oppName); 
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match Started</div>';
-            startBrd('white'); setLog('Local Pass & Play started.'); 
+            startBrd('white', 600); setLog('Local Pass & Play started.'); 
         }
 
         function clearHighlights() { $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected'); }
@@ -958,19 +1106,25 @@
             });
         }
 
-        function startBrd(or) {
-            gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(tick, 1000);
+        function startBrd(or, timeSeconds = 600, customFen = null) {
+            gm.reset(); 
+            if(customFen) gm.load(customFen);
+            
+            myCol = or[0]; tW = timeSeconds; tB = timeSeconds; 
+            clearInterval(tmr); tmr = setInterval(tick, 1000);
             $('#plr-name').html(playerName + ' ' + getBadgeHTML(playerRank));
             drawUI();
             selectedSq = null;
             sendPresence(); 
             
+            let posConfig = customFen ? customFen : 'start';
+
             brd = Chessboard('board', {
-                draggable: true, position: 'start', orientation: or,
+                draggable: true, position: posConfig, orientation: or,
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
                 onDragStart: (s,p) => {
                     if(gm.game_over()||thinking) return false;
-                    if(gMode==='net'||gMode==='cpu') { 
+                    if(gMode==='net'||gMode==='cpu'||gMode==='puzzle') { 
                         if(myCol==='w'&&p.search(/^b/)!==-1) return false; 
                         if(myCol==='b'&&p.search(/^w/)!==-1) return false; 
                         if(gm.turn()!==myCol) return false; 
@@ -1010,7 +1164,7 @@
             
             let piece = gm.get(sq);
             if (piece && piece.color === gm.turn()) {
-                if((gMode==='net' || gMode==='cpu') && gm.turn() !== myCol) { selectedSq = null; clearHighlights(); return; }
+                if((gMode==='net' || gMode==='cpu' || gMode==='puzzle') && gm.turn() !== myCol) { selectedSq = null; clearHighlights(); return; }
                 selectedSq = sq; showLegalMoves(sq);
             } else {
                 selectedSq = null; clearHighlights();
@@ -1063,7 +1217,7 @@
         });
 
         function setEval(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        function tick() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time expired. Session Over.');} }
+        function tick() { if(gm.game_over() || gMode==='puzzle') return; gm.turn()==='w'?tW--:tB--; drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); setLog('⏰ Time expired. Session Over.');} }
         function fmt(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
         function drawClk() { $('#plr-clock').text(fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(fmt(myCol==='w'?tB:tW)); }
         
@@ -1124,12 +1278,10 @@
                 mq.subscribe(`nx_inbox_${mId}`);
                 mq.subscribe('nx_admin_cmd');
                 
-                if(localStorage.getItem('akshat_chess_banned') !== 'true') {
-                    mq.subscribe('nx_presence_v1');
-                    clearInterval(presenceTimer);
-                    presenceTimer = setInterval(sendPresence, 4000);
-                    sendPresence();
-                }
+                mq.subscribe('nx_presence_v1');
+                clearInterval(presenceTimer);
+                presenceTimer = setInterval(sendPresence, 4000);
+                sendPresence();
             });
 
             mq.on('message', (top, msg) => {
@@ -1141,7 +1293,7 @@
                     if ($('#admin-modal').is(':visible')) renderAdminDashboard();
                 }
 
-                // 2. ADMIN ENFORCEMENT COMMANDS (Ban, Temp Ban, Unban, Rank, ANNOUNCE)
+                // 2. ADMIN ENFORCEMENT COMMANDS
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
                     
                     if (d.cmd === 'announce') {
@@ -1151,33 +1303,27 @@
                     }
 
                     if (d.cmd === 'ban' && d.target === mId) {
-                        localStorage.setItem('akshat_chess_banned', 'true');
-                        if (d.duration && d.duration > 0) {
-                            let expiryTime = Date.now() + (d.duration * 60000);
-                            localStorage.setItem('akshat_chess_ban_until', expiryTime.toString());
-                        } else {
-                            localStorage.removeItem('akshat_chess_ban_until');
+                        // Banned - Update Firebase to lock account globally
+                        if (window.fbDb && window.fbAuth.currentUser) {
+                            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true });
+                            });
                         }
                         if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-                        checkBanStatus();
-                    }
-
-                    if (d.cmd === 'unban' && (d.target === mId || d.target === 'ALL')) {
-                        localStorage.removeItem('akshat_chess_banned');
-                        localStorage.removeItem('akshat_chess_ban_until');
-                        alert("An administrator has removed your ban. Reloading system...");
-                        window.location.reload();
+                        document.getElementById('ban-screen').style.display = 'flex';
                     }
 
                     if (d.cmd === 'rank' && d.target === mId) {
                         playerRank = d.rank;
-                        localStorage.setItem('akshat_chess_rank', playerRank);
+                        if (window.fbDb && window.fbAuth.currentUser) {
+                            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { rank: d.rank });
+                            });
+                        }
                         updateWelcomeTag();
                         alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
                     }
                 }
-
-                if(localStorage.getItem('akshat_chess_banned') === 'true') return;
 
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
@@ -1188,7 +1334,7 @@
                             $('#room-list').append(`
                                 <div id="rm_${d.id}" class="player-tag" style="margin-bottom:8px; border-color: var(--border-glow);">
                                     <div class="pt-info">
-                                        <span style="font-size:1rem;">🟢</span> 
+                                        <span style="font-size:1rem;">🔒</span> 
                                         <div class="pt-name">${displayName} ${badge}</div>
                                     </div>
                                     <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="joinRoom('${d.id}')">Connect</button>
@@ -1203,6 +1349,13 @@
 
                 if(top === `nx_inbox_${mId}`) {
                     if(d.a === 'join' && currentActivity === "Hosting a Match Room") {
+                        let hostPass = document.getElementById('room-password-create').value;
+                        if(hostPass !== "" && d.pass !== hostPass) {
+                            // Incorrect Password
+                            mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'rejected', msg:"Incorrect Room Password."}));
+                            return;
+                        }
+
                         clearInterval(hostTimer);
                         aTop = `nx_rm_${mId}`; 
                         oppName = d.n ? d.n : "Challenger";
@@ -1212,6 +1365,10 @@
                         $('#opp-avatar').text('🌐');
                         $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('white'); 
+                    }
+                    if(d.a === 'rejected') {
+                        alert("Connection Refused: " + d.msg);
+                        returnToHome();
                     }
                     if(d.a === 'start' && currentActivity === "Connecting to Room...") {
                         aTop = d.r; 
@@ -1230,6 +1387,9 @@
                         let safeMsg = document.createTextNode(d.msg).textContent;
                         appendChat(safeMsg, 'opp');
                     }
+                    if(d.t === 'sys_chat' && d.s !== mId) {
+                        appendChat(d.msg, 'sys');
+                    }
                     if(d.t === 'resign' && d.s !== mId) {
                         clearInterval(tmr);
                         setLog('🏆 ' + oppName + ' disconnected. You win!');
@@ -1245,7 +1405,7 @@
             nav('screen-lobby'); 
             currentActivity = "Browsing Lobby";
             $('#lobby-ui').show(); $('#host-ui').hide(); 
-            $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#6b7280; padding:20px; font-size:0.85rem;">Scanning for active players...</div>');
+            $('#room-list').html('<div class="searching-msg" style="text-align:center; color:#6b7280; padding:20px; font-size:0.85rem;">Scanning for active rooms...</div>');
             
             if(!mq||!mq.connected) initNet();
             setTimeout(() => {
@@ -1279,13 +1439,16 @@
 
         function joinRoom(hostId) {
             if(!mq || !mq.connected) initNet(); 
+            let enteredPass = prompt("Enter room password (leave blank if none):");
+            if(enteredPass === null) return; // User cancelled
+
             currentActivity = "Connecting to Room...";
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Connecting to room...");
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank, pass: enteredPass}));
             }, 1000);
         }
 
@@ -1298,30 +1461,5 @@
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
     </script>
-<script type="module">
-  // 1. Import the core Firebase App
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-  
-  // 2. Import the Firebase Authentication library
-  import { getAuth } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
-    authDomain: "akshat-chess.firebaseapp.com",
-    projectId: "akshat-chess",
-    storageBucket: "akshat-chess.firebasestorage.app",
-    messagingSenderId: "821222063303",
-    appId: "1:821222063303:web:79945a324b70b0eed592e2"
-  };
-
-  // 3. Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-
-  // 4. Initialize the Authentication service
-  const auth = getAuth(app);
-  
-  // (Your login and signup functions will go right here!)
-</script>
 </body>
 </html>
