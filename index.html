@@ -507,17 +507,20 @@
     <!-- CORE GAME LOGIC -->
     <script>
         /* =========================================
-           CORE STATE SYSTEM
+           CORE STATE SYSTEM & PERSISTENT MEMORY
         ========================================= */
         let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
-        window.playerName = "Player";
-        window.playerRank = "";
-        window.playerAvatar = "😎";
-        let oppName = "Opponent", oppRank = "";
         
+        // Grab instant local memory to bypass login screen waiting
+        window.playerName = localStorage.getItem('akshat_chess_user') || "";
+        let playerPass = localStorage.getItem('akshat_chess_userpass') || "";
+        window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
+        window.playerRank = "";
+        
+        let oppName = "Opponent", oppRank = "";
         let livePlayers = {};
         let allTimeSessionPlayers = new Set(); 
         let currentActivity = "Main Menu";
@@ -541,12 +544,18 @@
                 }, 1100);
             }, 100);
 
-            // Failsafe: if Firebase takes more than 3 seconds or is blocked, show login screen anyway
+            // MAGIC AUTO-LOGIN: If we remember them locally, boot straight to the game!
             setTimeout(() => {
                 if(document.querySelectorAll('.screen.active').length === 0) {
-                    window.nav('screen-login');
+                    if (window.playerName !== "" && playerPass !== "") {
+                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                        window.updateWelcomeTag();
+                        window.nav('screen-home');
+                    } else {
+                        window.nav('screen-login');
+                    }
                 }
-            }, 2500);
+            }, 2000);
 
             try { initNet(); } catch(e) { console.error("Net Init Delayed", e); }
         });
@@ -672,7 +681,7 @@
         }
 
         /* =========================================
-           MODAL TOGGLES
+           MODALS & OVERLAYS
         ========================================= */
         window.openSettings = function() { document.getElementById('settings-modal').style.display = 'flex'; }
         window.closeSettings = function() { document.getElementById('settings-modal').style.display = 'none'; }
@@ -1450,9 +1459,17 @@
                 }
                 countEl.innerText = count;
             } catch (err) {
-                console.log(err);
-                listEl.innerHTML = '<div style="text-align:center; color:var(--danger); padding: 25px;">Error: Database secured or offline. Ensure Firebase Firestore rules allow reading.</div>';
-                countEl.innerText = "Error";
+                // If it fails, it's 99% because of Firebase Security Rules! Give explicit instructions.
+                if (err.message && err.message.toLowerCase().includes("permission")) {
+                    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger); border: 1px solid var(--danger); border-radius: 10px; background: rgba(239, 68, 68, 0.1); line-height: 1.6;">
+                        <strong>Database Locked by Firebase Rules!</strong><br><br>
+                        To fix this:<br>1. Go to your Firebase Console.<br>2. Click 'Firestore Database' -> 'Rules' tab.<br>3. Change the code to: <br><code style="color:white; font-size:1.1rem; background: #000; padding: 4px;">allow read, write: if true;</code><br>4. Click Publish.
+                    </div>`;
+                    countEl.innerText = "Locked";
+                } else {
+                    listEl.innerHTML = `<div style="text-align:center; color:var(--danger);">Error: ${err.message}</div>`;
+                    countEl.innerText = "Error";
+                }
             }
         };
 
@@ -1468,6 +1485,11 @@
 
             msg.innerText = "Connecting to server...";
             const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
+
+            // Instantly save to local memory for the fast-boot next time!
+            localStorage.setItem('akshat_chess_user', uInput);
+            localStorage.setItem('akshat_chess_userpass', pInput);
+            localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
 
             try {
                 await signInWithEmailAndPassword(auth, fakeEmail, pInput);
@@ -1515,6 +1537,11 @@
         };
 
         window.logOut = () => {
+            // Clear the Fast-Boot memory
+            localStorage.removeItem('akshat_chess_user');
+            localStorage.removeItem('akshat_chess_userpass');
+            localStorage.removeItem('akshat_chess_avatar');
+            
             signOut(auth).then(() => {
                 window.playerName = "Player";
                 window.playerRank = "";
@@ -1526,10 +1553,6 @@
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
-                    window.playerName = user.email.split('@')[0];
-                    window.playerRank = "";
-                    window.playerAvatar = "😎";
-                    
                     try {
                         const docSnap = await getDoc(doc(db, "users", user.uid));
                         if (docSnap.exists()) {
@@ -1544,6 +1567,10 @@
                             window.playerName = data.username || window.playerName;
                             window.playerRank = data.rank || "";
                             window.playerAvatar = data.avatar || "😎";
+                            
+                            // Update local memory with the latest server data
+                            localStorage.setItem('akshat_chess_user', window.playerName);
+                            localStorage.setItem('akshat_chess_avatar', window.playerAvatar);
                         }
                     } catch (err) {
                         console.log("Using local data connection.");
@@ -1552,17 +1579,29 @@
                     document.getElementById('plr-avatar').innerText = window.playerAvatar;
                     window.updateWelcomeTag();
                     
+                    // If they clicked an invite link, route them!
                     const urlParams = new URLSearchParams(window.location.search);
                     const joinId = urlParams.get('join');
                     if(joinId) {
                         window.openLobby();
                         setTimeout(() => window.joinRoom(joinId), 1000);
-                    } else {
-                        window.nav('screen-home');
                     }
                 } else {
-                    // Only transition to login if we aren't already actively doing something
-                    if(document.querySelectorAll('.screen.active').length === 0 || document.getElementById('screen-home').classList.contains('active')) {
+                    // SILENT RE-AUTH: If they have a saved pass but Firebase logged out, re-log them silently!
+                    let savedUser = localStorage.getItem('akshat_chess_user');
+                    let savedPass = localStorage.getItem('akshat_chess_userpass');
+                    
+                    if (savedUser && savedPass) {
+                        const fakeEmail = savedUser.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
+                        signInWithEmailAndPassword(auth, fakeEmail, savedPass).catch(err => {
+                            // If credentials changed, force a real login
+                            localStorage.removeItem('akshat_chess_user');
+                            localStorage.removeItem('akshat_chess_userpass');
+                            if(document.querySelectorAll('.screen.active').length === 0 || document.getElementById('screen-home').classList.contains('active')) {
+                                window.nav('screen-login');
+                            }
+                        });
+                    } else if(document.querySelectorAll('.screen.active').length === 0 || document.getElementById('screen-home').classList.contains('active')) {
                         window.nav('screen-login');
                     }
                 }
