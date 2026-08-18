@@ -628,31 +628,40 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const docSnap = await getDoc(doc(db, "users", user.uid));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    if(data.isBanned) {
-                        document.getElementById('ban-screen').style.display = 'flex';
-                        signOut(auth);
-                        return;
-                    }
+                try {
+                    const docSnap = await getDoc(doc(db, "users", user.uid));
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        if(data.isBanned) {
+                            document.getElementById('ban-screen').style.display = 'flex';
+                            signOut(auth);
+                            return;
+                        }
 
-                    window.playerName = data.username;
-                    window.playerRank = data.rank || "";
-                    window.playerAvatar = data.avatar || "😎";
-                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                        window.playerName = data.username || "Player";
+                        window.playerRank = data.rank || "";
+                        window.playerAvatar = data.avatar || "😎";
+                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
 
-                    updateWelcomeTag();
-                    
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const joinId = urlParams.get('join');
-                    if(joinId) {
-                        openLobby();
-                        setTimeout(() => joinRoom(joinId), 1000);
+                        updateWelcomeTag();
+                        
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const joinId = urlParams.get('join');
+                        if(joinId) {
+                            openLobby();
+                            setTimeout(() => joinRoom(joinId), 1000);
+                        } else {
+                            nav('screen-home');
+                        }
                     } else {
-                        nav('screen-home');
+                        // CRITICAL FIX: Ghost session detected. Clear the session and force login.
+                        await signOut(auth);
+                        nav('screen-login');
                     }
+                } catch (err) {
+                    console.log("Server connection error.");
+                    nav('screen-login');
                 }
             } else {
                 nav('screen-login');
@@ -755,7 +764,7 @@
            BOOT & LOGIN LOGIC
         ========================================= */
         window.addEventListener('load', () => {
-            initNet();
+            try { initNet(); } catch(e) {}
             setTimeout(() => {
                 const bar = document.getElementById('splash-bar');
                 const status = document.getElementById('splash-status');
@@ -763,9 +772,16 @@
                 if (status) status.innerText = 'ONLINE SYSTEMS READY';
 
                 setTimeout(() => {
-                    document.getElementById('splash-screen').style.opacity = '0';
+                    const splash = document.getElementById('splash-screen');
+                    if(splash) splash.style.opacity = '0';
                     setTimeout(() => { 
-                        document.getElementById('splash-screen').style.display = 'none'; 
+                        if(splash) splash.style.display = 'none'; 
+                        
+                        // CRITICAL BLACK SCREEN FAILSAFE:
+                        // If no screen has loaded by the time the animation finishes, force the login screen.
+                        if (document.querySelectorAll('.screen.active').length === 0) {
+                            nav('screen-login');
+                        }
                     }, 800);
                 }, 1100);
             }, 300);
@@ -1029,7 +1045,7 @@
         function sendPresence() {
             if (mq && mq.connected) {
                 mq.publish('nx_presence_v1', JSON.stringify({
-                    id: mId, name: playerName || "Anonymous", rank: playerRank, activity: currentActivity, time: Date.now()
+                    id: mId, name: window.playerName || "Anonymous", rank: window.playerRank, activity: currentActivity, time: Date.now()
                 }));
             }
         }
@@ -1104,7 +1120,7 @@
             
             myCol = or[0]; tW = timeSeconds; tB = timeSeconds; 
             clearInterval(tmr); tmr = setInterval(tick, 1000);
-            $('#plr-name').html(playerName + ' ' + getBadgeHTML(playerRank));
+            $('#plr-name').html(window.playerName + ' ' + getBadgeHTML(window.playerRank));
             drawUI();
             selectedSq = null;
             sendPresence(); 
@@ -1305,7 +1321,7 @@
                     }
 
                     if (d.cmd === 'rank' && d.target === mId) {
-                        playerRank = d.rank;
+                        window.playerRank = d.rank;
                         if (window.fbDb && window.fbAuth.currentUser) {
                             import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
                                 module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { rank: d.rank });
@@ -1334,7 +1350,7 @@
                         }
                     }
                     if(d.a === 'who' && currentActivity === "Hosting a Match Room") {
-                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
+                        mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
                     }
                 }
 
@@ -1351,7 +1367,7 @@
                         oppName = d.n ? d.n : "Challenger";
                         oppRank = d.r || "";
                         currentActivity = "Online Match vs " + oppName;
-                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:playerName, rk:playerRank}));
+                        mq.publish(`nx_inbox_${d.id}`, JSON.stringify({a:'start', r:aTop, n:window.playerName, rk:window.playerRank}));
                         $('#opp-avatar').text('🌐');
                         $('#opp-name').html(oppName + ' ' + getBadgeHTML(oppRank));
                         joinNet('white'); 
@@ -1416,7 +1432,7 @@
 
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:playerName, r:playerRank}));
+                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
             }, 1500);
         }
 
@@ -1438,7 +1454,7 @@
             
             clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:playerName, r:playerRank, pass: enteredPass}));
+                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:window.playerName, r:window.playerRank, pass: enteredPass}));
             }, 1000);
         }
 
