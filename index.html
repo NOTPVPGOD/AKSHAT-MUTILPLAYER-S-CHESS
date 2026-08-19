@@ -230,7 +230,7 @@
         </div>
     </div>
 
-    <!-- IRONCLAD BAN OVERLAY -->
+    <!-- RESTORED OLD BAN SYSTEM SCREEN -->
     <div id="ban-screen">
         <div style="font-size: 4rem; margin-bottom: 15px;">🛡️</div>
         <h1 style="color: var(--danger); font-size: 2.2rem; margin-bottom: 8px;">Access Suspended</h1>
@@ -310,6 +310,7 @@
                 Welcome to Akshat's custom Chess Engine!
             </p>
             <ul style="color: var(--text-main); font-size: 0.85rem; margin-left: 18px; margin-bottom: 18px; line-height: 1.7;">
+                <li><strong>Moving:</strong> Tap a piece to see legal moves, then tap the destination. Or drag and drop!</li>
                 <li><strong>Voice Chat:</strong> During a match, tap "🎤 Mic" to talk to your opponent live!</li>
                 <li><strong>AI Puzzles:</strong> The puzzle engine randomly selects from a massive database of Mate in 1 or Mate in 2 scenarios. Stockfish AI will dynamically fight back and try to defend!</li>
                 <li><strong>Online Play:</strong> Create a room to get an invite link. Send the link to a friend to connect instantly anywhere in the world.</li>
@@ -520,7 +521,7 @@
         let currentActivity = "Main Menu";
 
         /* =========================================
-           IRONCLAD BAN ENFORCEMENT PROTOCOL
+           RESTORED OLD BAN SYSTEM WITH ABSOLUTE LOCK
         ========================================= */
         window.checkBanStatus = function() {
             let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
@@ -528,19 +529,14 @@
 
             if (isBanned) {
                 if (banUntil && Date.now() > parseInt(banUntil)) {
+                    // Ban expired
                     localStorage.removeItem('akshat_chess_banned');
                     localStorage.removeItem('akshat_chess_ban_until');
                     document.getElementById('ban-screen').style.display = 'none';
                     return false;
                 } else {
-                    // WIPES ENTIRE UI SO THEY CANNOT BYPASS IT
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    // STILL BANNED - Enforce Lock
                     document.getElementById('ban-screen').style.display = 'flex';
-                    
-                    // DELETES AUTO-LOGIN CREDENTIALS SO REFRESHING DOESN'T LET THEM BACK IN
-                    localStorage.removeItem('akshat_chess_user');
-                    localStorage.removeItem('akshat_chess_userpass');
-                    
                     if (banUntil) {
                         let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
                         document.getElementById('ban-time-left').style.display = 'block';
@@ -554,13 +550,35 @@
             return false;
         }
 
-        window.checkBanStatus();
-        banCheckTimer = setInterval(window.checkBanStatus, 5000); 
+        /* =========================================
+           FAILSAFE LOGIN PROCESS
+        ========================================= */
+        window.completeLogin = function(u, p) {
+            localStorage.setItem('akshat_chess_user', u);
+            localStorage.setItem('akshat_chess_userpass', p);
+            localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
+
+            window.playerName = u;
+            window.playerAvatar = window.selectedAvatarIcon || "😎";
+            document.getElementById('plr-avatar').innerText = window.playerAvatar;
+            window.updateWelcomeTag();
+            window.nav('screen-home');
+
+            let ctx = window.getAudioCtx();
+            if (ctx && ctx.state === 'suspended') ctx.resume();
+        }
 
         /* =========================================
-           FAILSAFE SPLASH SCREEN (Instantly Loads)
+           SPLASH SCREEN BOOT
         ========================================= */
         document.addEventListener("DOMContentLoaded", () => {
+            
+            // Check Ban IMMEDIATELY before anything else loads
+            if(window.checkBanStatus()) {
+                document.getElementById('splash-screen').style.display = 'none';
+                return;
+            }
+
             setTimeout(() => {
                 const bar = document.getElementById('splash-bar');
                 const status = document.getElementById('splash-status');
@@ -576,9 +594,9 @@
                 }, 1100);
             }, 100);
 
-            // MAGIC AUTO-LOGIN
+            // AUTO-LOGIN CHECK
             setTimeout(() => {
-                if(window.checkBanStatus()) return; // HARD STOP if banned
+                if(window.checkBanStatus()) return; // Double check
 
                 if(document.querySelectorAll('.screen.active').length === 0) {
                     if (window.playerName !== "" && playerPass !== "") {
@@ -589,9 +607,9 @@
                         window.nav('screen-login');
                     }
                 }
-            }, 2000);
+            }, 1500);
 
-            try { initNet(); } catch(e) { console.error("Net Init Delayed", e); }
+            try { initNet(); } catch(e) {}
         });
 
         /* =========================================
@@ -930,7 +948,7 @@
         }
 
         /* =========================================
-           AI BOT PROFILES & PUZZLE GENERATOR
+           AI BOT PROFILES & MASSIVE PUZZLE GENERATOR
         ========================================= */
         const ROSTER = [
             { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "Clicking random squares!"] },
@@ -951,28 +969,36 @@
             rg.appendChild(c);
         });
 
-        // MASSIVE AI PUZZLE ENGINE
+        // HUGE MATE-IN-1 AND MATE-IN-2 LIBRARY
         window.playPuzzle = function() {
             const MATE_PUZZLES = [
-                "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", // Scholar
-                "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", // Ladder
-                "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1", // Fool
-                "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1", // Back rank 1
-                "k7/8/1K6/2Q5/8/8/8/8 w - - 0 1", // Queen edge
-                "1k6/1p6/1K6/8/8/8/1R6/8 w - - 0 1", // Rook edge
-                "r1b2r1k/pp2Nppp/8/2B5/4P3/8/PPP2PPP/R2R2K1 w - - 0 1", // Tactic 1
-                "r4rk1/1b3ppp/p7/1p1N4/8/1P6/1PP2PPP/R4RK1 w - - 0 1", // Tactic 2
-                "8/6pk/7p/8/1Q2p3/4P1P1/4qP1P/6K1 b - - 0 1", // Black to move
-                "2r3k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", // Back rank 2
-                "k7/P7/1K6/8/8/8/8/R7 w - - 0 1", // Anastasia
-                "3r2k1/p4ppp/8/8/8/8/P4PPP/3R2K1 w - - 0 1", // Back rank 3
-                "8/8/8/8/8/2k5/R7/Q1K5 w - - 0 1", // QR
-                "6k1/R7/6K1/8/8/8/8/8 w - - 0 1", // King and Rook
-                "7R/8/8/8/8/8/7R/k1K5 w - - 0 1", // Double Rook
-                "r2q1b1r/ppp1k1pp/8/3Bp3/3n4/5Q2/PPPP1PPP/RNB1K2R w KQ - 1 1", // Tactic 3
-                "r2q1rk1/1b1n1ppp/p2p4/1p1Np1b1/4P3/N2B4/PPP2PPP/R2QK2R w KQ - 0 1", // Tactic 4
-                "8/1r6/8/8/2K5/k7/8/1R6 w - - 0 1", // Endgame 1
-                "8/p7/kp6/8/8/K7/8/R7 w - - 0 1" // Endgame 2
+                // Mate in 1
+                "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", 
+                "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", 
+                "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1", 
+                "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1", 
+                "k7/8/1K6/2Q5/8/8/8/8 w - - 0 1", 
+                "1k6/1p6/1K6/8/8/8/1R6/8 w - - 0 1", 
+                "8/6pk/7p/8/1Q2p3/4P1P1/4qP1P/6K1 b - - 0 1", 
+                "2r3k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", 
+                "k7/P7/1K6/8/8/8/8/R7 w - - 0 1", 
+                "3r2k1/p4ppp/8/8/8/8/P4PPP/3R2K1 w - - 0 1", 
+                "8/8/8/8/8/2k5/R7/Q1K5 w - - 0 1", 
+                "6k1/R7/6K1/8/8/8/8/8 w - - 0 1", 
+                "7R/8/8/8/8/8/7R/k1K5 w - - 0 1", 
+                "8/1r6/8/8/2K5/k7/8/1R6 w - - 0 1", 
+                "8/p7/kp6/8/8/K7/8/R7 w - - 0 1",
+                
+                // Mate in 2
+                "r1b2r1k/pp2Nppp/8/2B5/4P3/8/PPP2PPP/R2R2K1 w - - 0 1", 
+                "r4rk1/1b3ppp/p7/1p1N4/8/1P6/1PP2PPP/R4RK1 w - - 0 1", 
+                "r2q1b1r/ppp1k1pp/8/3Bp3/3n4/5Q2/PPPP1PPP/RNB1K2R w KQ - 1 1", 
+                "r2q1rk1/1b1n1ppp/p2p4/1p1Np1b1/4P3/N2B4/PPP2PPP/R2QK2R w KQ - 0 1",
+                "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1",
+                "r3k2r/pbpp1ppp/1pn5/2b1P3/2B2Pn1/2N3Pq/PPP4P/R1B1QR1K b kq - 0 1",
+                "2r1nrk1/1p1q1p1p/p2p2p1/3N1P2/3Q4/8/PPP3PP/4RRK1 w - - 0 1",
+                "rn3rk1/ppp1b1pp/4p3/3q4/3P1B2/8/PPP3PP/R2Q1RK1 w - - 0 1",
+                "r1b2rk1/1pqp1ppp/p1n1p3/8/1b2P3/1NN1B3/PPPQ1PPP/R3K2R w KQ - 0 1"
             ];
             
             let fen = MATE_PUZZLES[Math.floor(Math.random() * MATE_PUZZLES.length)];
@@ -1229,7 +1255,7 @@
         });
 
         window.setEval = function(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        window.tick = function() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} }
+        window.tick = function() { if(gm.game_over() || currentActivity.includes("Solving")) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} }
         window.fmt = function(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
         window.drawClk = function() { $('#plr-clock').text(window.fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(window.fmt(myCol==='w'?tB:tW)); }
         
@@ -1330,7 +1356,7 @@
                     if (d.cmd === 'ban' && d.target === mId) {
                         localStorage.setItem('akshat_chess_banned', 'true');
                         
-                        // ABSOLUTE BAN FIX: Wipe auto-login data so they can't log back in
+                        // PREVENT AUTO-LOGIN BYPASS
                         localStorage.removeItem('akshat_chess_user');
                         localStorage.removeItem('akshat_chess_userpass');
                         
@@ -1340,6 +1366,8 @@
                         } else {
                             localStorage.removeItem('akshat_chess_ban_until');
                         }
+                        
+                        if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
                         
                         if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
                             import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
@@ -1585,43 +1613,20 @@
             msg.innerText = "Connecting to server...";
             const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
 
+            // BRAVE BROWSER FAILSAFE: Bypass Firebase if it gets blocked
+            let fallbackTimer = setTimeout(() => {
+                msg.innerText = "Server slow. Starting Local Mode...";
+                setTimeout(() => { window.completeLogin(uInput, pInput); }, 1000);
+            }, 4000);
+
             try {
                 await signInWithEmailAndPassword(auth, fakeEmail, pInput);
-                
-                const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-                if(docSnap.exists() && docSnap.data().isBanned) {
-                    localStorage.setItem('akshat_chess_banned', 'true');
-                    
-                    // PREVENT AUTO-LOGIN BYPASS
-                    localStorage.removeItem('akshat_chess_user');
-                    localStorage.removeItem('akshat_chess_userpass');
-                    
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                    document.getElementById('ban-screen').style.display = 'flex';
-                    msg.innerText = "Account suspended.";
-                    await signOut(auth);
-                    return;
-                }
-
+                clearTimeout(fallbackTimer);
                 msg.innerText = "Logged in successfully!";
-                
-                localStorage.setItem('akshat_chess_user', uInput);
-                localStorage.setItem('akshat_chess_userpass', pInput);
-                localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
-
-                window.playerName = uInput;
-                window.playerAvatar = window.selectedAvatarIcon || "😎";
-                document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                window.updateWelcomeTag();
-                window.nav('screen-home');
-                
-                let ctx = window.getAudioCtx();
-                if (ctx && ctx.state === 'suspended') ctx.resume();
-
+                window.completeLogin(uInput, pInput);
             } catch (error) {
                 try {
                     const userCred = await createUserWithEmailAndPassword(auth, fakeEmail, pInput);
-                    
                     try {
                         await setDoc(doc(db, "users", userCred.user.uid), {
                             username: uInput,
@@ -1631,25 +1636,13 @@
                             isBanned: false
                         });
                     } catch (dbErr) {
-                        console.log("Database secured. Using local data.");
+                        console.log("DB Blocked.");
                     }
-
+                    clearTimeout(fallbackTimer);
                     msg.innerText = "Account created!";
-                    
-                    localStorage.setItem('akshat_chess_user', uInput);
-                    localStorage.setItem('akshat_chess_userpass', pInput);
-                    localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
-
-                    window.playerName = uInput;
-                    window.playerAvatar = window.selectedAvatarIcon || "😎";
-                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                    window.updateWelcomeTag();
-                    window.nav('screen-home');
-                    
-                    let ctx = window.getAudioCtx();
-                    if (ctx && ctx.state === 'suspended') ctx.resume();
-
+                    window.completeLogin(uInput, pInput);
                 } catch(regErr) {
+                    clearTimeout(fallbackTimer);
                     msg.innerText = "Error: Invalid credentials or name taken.";
                 }
             }
@@ -1682,11 +1675,8 @@
                             
                             if(data.isBanned) {
                                 localStorage.setItem('akshat_chess_banned', 'true');
-                                
-                                // WIPE AUTO-LOGIN SO THEY CANNOT REFRESH AND BYPASS
                                 localStorage.removeItem('akshat_chess_user');
                                 localStorage.removeItem('akshat_chess_userpass');
-                                
                                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                                 document.getElementById('ban-screen').style.display = 'flex';
                                 signOut(auth);
@@ -1709,7 +1699,7 @@
                     
                     const urlParams = new URLSearchParams(window.location.search);
                     const joinId = urlParams.get('join');
-                    if(joinId) {
+                    if(joinId && !window.checkBanStatus()) {
                         window.openLobby();
                         setTimeout(() => window.joinRoom(joinId), 1000);
                     }
@@ -1717,8 +1707,7 @@
                     let savedUser = localStorage.getItem('akshat_chess_user');
                     let savedPass = localStorage.getItem('akshat_chess_userpass');
                     
-                    // PREVENT AUTO-LOGIN IF BANNED LOCALLY
-                    if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+                    if(window.checkBanStatus()) return;
 
                     if (savedUser && savedPass) {
                         const fakeEmail = savedUser.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
