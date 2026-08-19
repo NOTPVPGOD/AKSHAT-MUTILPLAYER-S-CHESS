@@ -258,7 +258,7 @@
     </div>
 
     <!-- LOGIN SCREEN (NO PASSWORD REQUIRED) -->
-    <div id="screen-login" class="screen">
+    <div id="screen-login" class="screen active">
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Enter a username to join the multiplayer server.</div>
         <div class="menu-container" style="background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-subtle);">
@@ -505,7 +505,7 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- CORE GAME LOGIC -->
+    <!-- CORE GAME LOGIC (LAZY LOADED & UNBREAKABLE) -->
     <script>
         /* =========================================
            CORE STATE SYSTEM & PERSISTENT MEMORY
@@ -525,6 +525,26 @@
         let currentActivity = "Main Menu";
 
         /* =========================================
+           LAZY LOAD FIREBASE (Bypasses Adblockers)
+        ========================================= */
+        const FB_CONFIG = {
+            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
+            projectId: "akshat-chess"
+        };
+
+        window.getFB = async function() {
+            try {
+                const appMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+                const fsMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const app = appMod.initializeApp(FB_CONFIG);
+                const db = fsMod.getFirestore(app);
+                return { db, ...fsMod };
+            } catch(e) {
+                return null; // Silent catch if browser blocks Google scripts
+            }
+        };
+
+        /* =========================================
            IRONCLAD BAN ENFORCEMENT PROTOCOL
         ========================================= */
         window.applyBan = function(isPermanent = false) {
@@ -532,8 +552,7 @@
             if (window.playerName && window.playerName !== "Player" && window.playerName !== "") {
                 localStorage.setItem('akshat_chess_last_banned_user', window.playerName);
             }
-            // WIPE AUTO LOGIN TO PREVENT BYPASS
-            localStorage.removeItem('akshat_chess_user');
+            localStorage.removeItem('akshat_chess_user'); // Delete Auto-Login
             
             if (aTop && mq) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
             window.location.reload(); 
@@ -549,26 +568,21 @@
         window.checkIfUnbanned = async function() {
             let user = localStorage.getItem('akshat_chess_last_banned_user');
             if (!user) {
-                // If we don't know who they were, clear ban and send to login
-                localStorage.removeItem('akshat_chess_banned');
-                window.location.reload();
+                window.applyUnban();
                 return;
             }
-            if (!window.fbDb) return alert("Database not connected yet. Please wait 3 seconds and try again.");
+            
+            const fb = await window.getFB();
+            if (!fb) return alert("Database blocked by browser settings. Cannot verify unban status.");
             
             try {
-                if(window.fbGetDoc && window.fbDoc) {
-                    const docSnap = await window.fbGetDoc(window.fbDoc(window.fbDb, "users", user));
-                    if (docSnap.exists() && !docSnap.data().isBanned) {
-                        window.applyUnban();
-                    } else if (!docSnap.exists()) {
-                        // Their account was completely wiped by admin!
-                        window.applyUnban();
-                    } else {
-                        alert("Your account is still suspended by the Server Admin.");
-                    }
+                const docSnap = await fb.getDoc(fb.doc(fb.db, "users", user));
+                if (docSnap.exists() && !docSnap.data().isBanned) {
+                    window.applyUnban();
+                } else if (!docSnap.exists()) {
+                    window.applyUnban(); // Account was wiped, effectively unbanned
                 } else {
-                    alert("Database not ready yet. Please wait a moment and try again.");
+                    alert("Your account is still suspended by the Server Admin.");
                 }
             } catch (err) {
                 alert("Could not check status: " + err.message);
@@ -581,16 +595,13 @@
 
             if (isBanned) {
                 if (banUntil && Date.now() > parseInt(banUntil)) {
-                    // Ban expired
                     localStorage.removeItem('akshat_chess_banned');
                     localStorage.removeItem('akshat_chess_ban_until');
                     document.getElementById('ban-screen').style.display = 'none';
                     return false;
                 } else {
-                    // STILL BANNED - Enforce Lock
                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('ban-screen').style.display = 'flex';
-                    
                     if (banUntil) {
                         let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
                         document.getElementById('ban-time-left').style.display = 'block';
@@ -621,7 +632,7 @@
             if (ctx && ctx.state === 'suspended') ctx.resume();
         }
 
-        window.saveUsername = function() {
+        window.saveUsername = async function() {
             const uInput = document.getElementById('username-input').value.trim();
             const msg = document.getElementById('auth-msg');
             
@@ -630,24 +641,42 @@
                 return;
             }
 
-            msg.innerText = "Verifying account...";
+            msg.innerText = "Connecting to server...";
             
-            // 1. BRAVE BROWSER FALLBACK (If Database is blocked, login safely after 3s)
+            // Failsafe timer: If database takes longer than 3.5s, let them play anyway.
+            let isResolved = false;
             let fallbackTimer = setTimeout(() => {
-                msg.innerText = "Server slow. Using Local Mode...";
-                setTimeout(() => { window.completeLogin(uInput); }, 1000);
-            }, 3000);
+                if (!isResolved) {
+                    isResolved = true;
+                    msg.innerText = "Server slow. Using Local Mode...";
+                    setTimeout(() => window.completeLogin(uInput), 1000);
+                }
+            }, 3500);
 
-            // 2. CHECK DATABASE BEFORE LETTING THEM IN (Prevents split-second bypasses)
-            if (window.fbDb && window.fbDoc && window.fbGetDoc && window.fbSetDoc) {
-                const userRef = window.fbDoc(window.fbDb, "users", uInput);
-                window.fbGetDoc(userRef).then(docSnap => {
+            const fb = await window.getFB();
+            if (!fb) {
+                if (!isResolved) {
+                    isResolved = true;
                     clearTimeout(fallbackTimer);
+                    msg.innerText = "Network shielded. Local mode active.";
+                    setTimeout(() => window.completeLogin(uInput), 1000);
+                }
+                return;
+            }
+
+            try {
+                const docRef = fb.doc(fb.db, "users", uInput);
+                const docSnap = await fb.getDoc(docRef);
+                
+                if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(fallbackTimer);
+                    
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         if(data.isBanned) {
                             msg.innerText = "Account suspended.";
-                            window.playerName = uInput; // So applyBan knows who to log as last banned
+                            window.playerName = uInput;
                             window.applyBan(); 
                         } else {
                             window.playerRank = data.rank || "";
@@ -655,7 +684,7 @@
                             window.completeLogin(uInput);
                         }
                     } else {
-                        window.fbSetDoc(userRef, {
+                        await fb.setDoc(docRef, {
                             username: uInput,
                             avatar: window.selectedAvatarIcon || "😎",
                             elo: 1200,
@@ -666,24 +695,42 @@
                         msg.innerText = "Account created!";
                         window.completeLogin(uInput);
                     }
-                }).catch(e => {
-                    console.log("DB Sync failed");
-                    // Keep fallback timer running if error
-                });
+                }
+            } catch (e) {
+                if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(fallbackTimer);
+                    msg.innerText = "Database offline. Proceeding locally...";
+                    setTimeout(() => window.completeLogin(uInput), 1000);
+                }
             }
         };
 
+        window.verifyFirebaseAccount = async function() {
+            if(window.playerName === "") return;
+            const fb = await window.getFB();
+            if(!fb) return;
+            try {
+                const docRef = fb.doc(fb.db, "users", window.playerName);
+                const docSnap = await fb.getDoc(docRef);
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    if(data.isBanned) {
+                        window.applyBan(true);
+                    } else {
+                        window.playerRank = data.rank || "";
+                        window.updateWelcomeTag();
+                    }
+                }
+            } catch(e) {}
+        }
+
         /* =========================================
-           SPLASH SCREEN BOOT
+           SPLASH SCREEN BOOT (Guaranteed Visuals)
         ========================================= */
         document.addEventListener("DOMContentLoaded", () => {
             
-            // Check Ban IMMEDIATELY before anything else loads
-            if(window.checkBanStatus()) {
-                document.getElementById('splash-screen').style.display = 'none';
-                return;
-            }
-
+            // 1. Instantly remove Splash Screen
             setTimeout(() => {
                 const bar = document.getElementById('splash-bar');
                 const status = document.getElementById('splash-status');
@@ -692,49 +739,31 @@
 
                 setTimeout(() => {
                     const splash = document.getElementById('splash-screen');
-                    if(splash) splash.style.opacity = '0';
-                    setTimeout(() => { 
-                        if(splash) splash.style.display = 'none'; 
-                    }, 800);
+                    if(splash) {
+                        splash.style.opacity = '0';
+                        setTimeout(() => splash.style.display = 'none', 800);
+                    }
                 }, 1100);
             }, 100);
 
-            // AUTO-LOGIN CHECK (Background syncs with Firebase automatically)
-            setTimeout(async () => {
-                if(window.checkBanStatus()) return; // HARD STOP if banned
+            // 2. Guaranteed Screen Routing
+            setTimeout(() => {
+                if(window.checkBanStatus()) return; // Lock if banned
 
-                if(document.querySelectorAll('.screen.active').length === 0) {
-                    let savedUser = localStorage.getItem('akshat_chess_user');
-                    if (savedUser && savedUser !== "") {
-                        
-                        // Check DB for bans in background while logging in
-                        if (window.fbDb && window.fbDoc && window.fbGetDoc) {
-                            try {
-                                const docRef = window.fbDoc(window.fbDb, "users", savedUser);
-                                const docSnap = await window.fbGetDoc(docRef);
-                                if (docSnap.exists()) {
-                                    const data = docSnap.data();
-                                    if(data.isBanned) {
-                                        window.playerName = savedUser;
-                                        window.applyBan(true);
-                                        return;
-                                    }
-                                    window.playerRank = data.rank || "";
-                                    window.playerAvatar = data.avatar || window.playerAvatar;
-                                    window.updateWelcomeTag();
-                                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                                }
-                            } catch(e) {}
-                        }
-
-                        window.playerName = savedUser;
-                        window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
-                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                        window.updateWelcomeTag();
-                        window.nav('screen-home');
-                    } else {
-                        window.nav('screen-login');
-                    }
+                if (window.playerName !== "") {
+                    // Route to home
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('screen-home').classList.add('active');
+                    
+                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                    window.updateWelcomeTag();
+                    
+                    // Background verify
+                    window.verifyFirebaseAccount();
+                } else {
+                    // Ensure login screen is visible
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('screen-login').classList.add('active');
                 }
             }, 1200);
 
@@ -1006,10 +1035,157 @@
             list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">No players active right now.</div>' : html;
         }
 
+        /* 
+           DIRECT DATABASE ADMIN COMMANDS
+        */
+        window.loadAllUsersForAdmin = async () => {
+            const listEl = document.getElementById('admin-db-list');
+            const countEl = document.getElementById('admin-total-db-count');
+            listEl.innerHTML = '<div style="text-align:center; color:#6b7280;">Fetching accounts from Firebase Database...</div>';
+            
+            const fb = await window.getFB();
+            if(!fb) {
+                listEl.innerHTML = '<div style="text-align:center; color:var(--danger); padding:20px;">Database locked by browser (Adblock/Shields).</div>';
+                countEl.innerText = "Error";
+                return;
+            }
+
+            try {
+                const querySnapshot = await fb.getDocs(fb.collection(fb.db, "users"));
+                let html = "";
+                let count = 0;
+                
+                querySnapshot.forEach((d) => {
+                    count++;
+                    const data = d.data();
+                    let badge = window.getBadgeHTML(data.rank);
+                    let isMe = (d.id === window.playerName) ? " <span style='font-size: 0.75rem; color:#6b7280;'>(You)</span>" : "";
+                    
+                    let actionBtn = "";
+                    if (data.isBanned) {
+                        actionBtn = `<button class="btn-small btn-secondary" style="border-color: var(--success); color: var(--success);" onclick="window.adminUnbanUser('${d.id}')">✅ Unban</button>`;
+                    } else {
+                        if (d.id !== window.playerName) {
+                            actionBtn = `<button class="btn-small btn-danger" onclick="window.adminBanUser('${d.id}', null)">🔨 Ban</button>`;
+                        }
+                    }
+
+                    let banTag = data.isBanned ? '<span style="color: var(--danger); font-size: 0.75rem; font-weight: bold; margin-left: 10px;">BANNED</span>' : '';
+                    
+                    html += `
+                        <div class="player-row" style="background: rgba(255,255,255,0.02);">
+                            <div class="info">
+                                <div style="font-size: 1.15rem; font-weight: bold; display: flex; align-items: center;">
+                                    <span style="font-size: 1.5rem; margin-right: 8px;">${data.avatar || '😎'}</span> 
+                                    ${data.username} ${isMe} ${badge} ${banTag}
+                                </div>
+                            </div>
+                            <div class="actions">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if(count === 0) {
+                    listEl.innerHTML = '<div style="text-align:center; color:#6b7280; padding: 25px;">Database is empty.</div>';
+                } else {
+                    listEl.innerHTML = html;
+                }
+                countEl.innerText = count;
+            } catch (err) {
+                listEl.innerHTML = `<div style="text-align:center; color:var(--danger);">Error: ${err.message}</div>`;
+                countEl.innerText = "Error";
+            }
+        };
+
+        window.adminBanUser = async function(username, mqttId) {
+            if (username === window.playerName) { alert("Action blocked: Cannot ban yourself."); return; }
+            
+            let choice = prompt(`Ban Protocol for ${username}:\n\n[1] Permanent Ban\n[2] 10-Minute Ban\n[3] 1-Hour Ban`);
+            let mins = -1;
+            if (choice === '1') mins = 0;
+            else if (choice === '2') mins = 10;
+            else if (choice === '3') mins = 60;
+            
+            if (mins !== -1) {
+                const fb = await window.getFB();
+                if(fb) {
+                    try { await fb.updateDoc(fb.doc(fb.db, "users", username), { isBanned: true }); } catch(e) {}
+                }
+                
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'ban_name', targetName: username, duration: mins, key: ADMIN_PASS }));
+                
+                if(mqttId && livePlayers[mqttId]) delete livePlayers[mqttId];
+                if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
+                window.renderAdminDashboard();
+                alert(`Player ${username} has been banned.`);
+            }
+        }
+
+        window.adminUnbanUser = async function(username) {
+            const fb = await window.getFB();
+            if(fb) {
+                try {
+                    await fb.updateDoc(fb.doc(fb.db, "users", username), { isBanned: false });
+                } catch(e) { alert("Error unbanning in database."); }
+            }
+            
+            mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban_name', targetName: username, key: ADMIN_PASS }));
+            if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
+            alert(`Player ${username} has been unbanned!`);
+        }
+
+        window.adminGlobalUnban = async function() {
+            if(!confirm("Are you sure you want to lift all network bans globally?")) return;
+            const fb = await window.getFB();
+            
+            if(fb) {
+                try {
+                    const qs = await fb.getDocs(fb.collection(fb.db, "users"));
+                    qs.forEach(async (d) => {
+                        if (d.data().isBanned) {
+                            await fb.updateDoc(fb.doc(fb.db, "users", d.id), { isBanned: false });
+                        }
+                    });
+                } catch(e) { alert("Error database unban: " + e.message); }
+            }
+
+            mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: 'ALL', key: ADMIN_PASS }));
+            if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
+            alert("Global unban sequence complete!");
+        }
+
+        window.adminWipeAccounts = async function() {
+            if(!confirm("⚠️ DANGER: Are you sure you want to PERMANENTLY wipe all accounts EXCEPT yours?")) return;
+            let check = prompt("Type 'WIPE' to confirm this action:");
+            if (check !== "WIPE") { alert("Action cancelled."); return; }
+
+            const fb = await window.getFB();
+            if(!fb) { alert("Database blocked by browser settings."); return; }
+
+            try {
+                const qs = await fb.getDocs(fb.collection(fb.db, "users"));
+                let wipeCount = 0;
+                qs.forEach(async (d) => {
+                    if (d.id !== window.playerName) {
+                        fb.deleteDoc(fb.doc(fb.db, "users", d.id));
+                        wipeCount++;
+                    }
+                });
+                
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'wipe', exception: window.playerName, key: ADMIN_PASS }));
+                if(window.loadAllUsersForAdmin) setTimeout(window.loadAllUsersForAdmin, 1000);
+                alert(`Successfully wiped ${wipeCount} accounts from the database.`);
+            } catch(e) {
+                alert("Error wiping accounts: " + e.message);
+            }
+        }
+
         window.logOut = () => {
             localStorage.removeItem('akshat_chess_user');
             localStorage.removeItem('akshat_chess_avatar');
-            window.playerName = "Player";
+            window.playerName = "";
             window.playerRank = "";
             window.nav('screen-login');
             window.closeSettings();
@@ -1462,7 +1638,6 @@
                     if (d.cmd === 'ban_name' && d.targetName === window.playerName) {
                         window.applyBan();
                     }
-                    // FIXED: Live unban now checks your actual name or your last banned name!
                     if (d.cmd === 'unban_name' && (d.targetName === window.playerName || d.targetName === localStorage.getItem('akshat_chess_last_banned_user'))) {
                         window.applyUnban();
                     }
@@ -1606,35 +1781,6 @@
         }
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
-    </script>
-
-    <!-- SERVER LOGIC (FIREBASE INTEGRATION) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
-            authDomain: "akshat-chess.firebaseapp.com",
-            projectId: "akshat-chess",
-            storageBucket: "akshat-chess.firebasestorage.app",
-            messagingSenderId: "821222063303",
-            appId: "1:821222063303:web:79945a324b70b0eed592e2"
-        };
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            window.fbDb = getFirestore(app);
-            window.fbDoc = doc;
-            window.fbSetDoc = setDoc;
-            window.fbGetDoc = getDoc;
-            window.fbCollection = collection;
-            window.fbGetDocs = getDocs;
-            window.fbDeleteDoc = deleteDoc;
-            window.fbUpdateDoc = updateDoc;
-        } catch (e) {
-            console.error("Firebase module error:", e);
-        }
     </script>
 </body>
 </html>
