@@ -529,7 +529,7 @@
         ========================================= */
         window.applyBan = function(isPermanent = false) {
             localStorage.setItem('akshat_chess_banned', 'true');
-            if (window.playerName && window.playerName !== "Player") {
+            if (window.playerName && window.playerName !== "Player" && window.playerName !== "") {
                 localStorage.setItem('akshat_chess_last_banned_user', window.playerName);
             }
             // WIPE AUTO LOGIN TO PREVENT BYPASS
@@ -567,6 +567,8 @@
                     } else {
                         alert("Your account is still suspended by the Server Admin.");
                     }
+                } else {
+                    alert("Database not ready yet. Please wait a moment and try again.");
                 }
             } catch (err) {
                 alert("Could not check status: " + err.message);
@@ -586,7 +588,9 @@
                     return false;
                 } else {
                     // STILL BANNED - Enforce Lock
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('ban-screen').style.display = 'flex';
+                    
                     if (banUntil) {
                         let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
                         document.getElementById('ban-time-left').style.display = 'block';
@@ -626,22 +630,29 @@
                 return;
             }
 
-            msg.innerText = "Logging in...";
+            msg.innerText = "Verifying account...";
             
-            // 1. INSTANT LOCAL LOGIN (Guarantees the game works immediately)
-            window.completeLogin(uInput);
+            // 1. BRAVE BROWSER FALLBACK (If Database is blocked, login safely after 3s)
+            let fallbackTimer = setTimeout(() => {
+                msg.innerText = "Server slow. Using Local Mode...";
+                setTimeout(() => { window.completeLogin(uInput); }, 1000);
+            }, 3000);
 
-            // 2. BACKGROUND FIREBASE SYNC
+            // 2. CHECK DATABASE BEFORE LETTING THEM IN (Prevents split-second bypasses)
             if (window.fbDb && window.fbDoc && window.fbGetDoc && window.fbSetDoc) {
                 const userRef = window.fbDoc(window.fbDb, "users", uInput);
                 window.fbGetDoc(userRef).then(docSnap => {
+                    clearTimeout(fallbackTimer);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         if(data.isBanned) {
+                            msg.innerText = "Account suspended.";
+                            window.playerName = uInput; // So applyBan knows who to log as last banned
                             window.applyBan(); 
                         } else {
                             window.playerRank = data.rank || "";
-                            window.updateWelcomeTag();
+                            msg.innerText = "Logged in successfully!";
+                            window.completeLogin(uInput);
                         }
                     } else {
                         window.fbSetDoc(userRef, {
@@ -651,8 +662,14 @@
                             rank: "",
                             isBanned: false
                         });
+                        window.playerRank = "";
+                        msg.innerText = "Account created!";
+                        window.completeLogin(uInput);
                     }
-                }).catch(e => console.log("DB Sync failed"));
+                }).catch(e => {
+                    console.log("DB Sync failed");
+                    // Keep fallback timer running if error
+                });
             }
         };
 
@@ -660,6 +677,8 @@
            SPLASH SCREEN BOOT
         ========================================= */
         document.addEventListener("DOMContentLoaded", () => {
+            
+            // Check Ban IMMEDIATELY before anything else loads
             if(window.checkBanStatus()) {
                 document.getElementById('splash-screen').style.display = 'none';
                 return;
@@ -680,20 +699,15 @@
                 }, 1100);
             }, 100);
 
-            // AUTO-LOGIN CHECK 
+            // AUTO-LOGIN CHECK (Background syncs with Firebase automatically)
             setTimeout(async () => {
-                if(window.checkBanStatus()) return; 
+                if(window.checkBanStatus()) return; // HARD STOP if banned
 
                 if(document.querySelectorAll('.screen.active').length === 0) {
                     let savedUser = localStorage.getItem('akshat_chess_user');
                     if (savedUser && savedUser !== "") {
-                        window.playerName = savedUser;
-                        window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
-                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
-                        window.updateWelcomeTag();
-                        window.nav('screen-home');
                         
-                        // Background Ban Check
+                        // Check DB for bans in background while logging in
                         if (window.fbDb && window.fbDoc && window.fbGetDoc) {
                             try {
                                 const docRef = window.fbDoc(window.fbDb, "users", savedUser);
@@ -701,14 +715,23 @@
                                 if (docSnap.exists()) {
                                     const data = docSnap.data();
                                     if(data.isBanned) {
+                                        window.playerName = savedUser;
                                         window.applyBan(true);
-                                    } else {
-                                        window.playerRank = data.rank || "";
-                                        window.updateWelcomeTag();
+                                        return;
                                     }
+                                    window.playerRank = data.rank || "";
+                                    window.playerAvatar = data.avatar || window.playerAvatar;
+                                    window.updateWelcomeTag();
+                                    document.getElementById('plr-avatar').innerText = window.playerAvatar;
                                 }
                             } catch(e) {}
                         }
+
+                        window.playerName = savedUser;
+                        window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
+                        document.getElementById('plr-avatar').innerText = window.playerAvatar;
+                        window.updateWelcomeTag();
+                        window.nav('screen-home');
                     } else {
                         window.nav('screen-login');
                     }
@@ -1439,7 +1462,8 @@
                     if (d.cmd === 'ban_name' && d.targetName === window.playerName) {
                         window.applyBan();
                     }
-                    if (d.cmd === 'unban_name' && d.targetName === window.playerName) {
+                    // FIXED: Live unban now checks your actual name or your last banned name!
+                    if (d.cmd === 'unban_name' && (d.targetName === window.playerName || d.targetName === localStorage.getItem('akshat_chess_last_banned_user'))) {
                         window.applyUnban();
                     }
                     if (d.cmd === 'unban' && d.target === 'ALL') {
