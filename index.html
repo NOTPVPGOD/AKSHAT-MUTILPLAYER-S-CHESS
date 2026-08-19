@@ -234,12 +234,12 @@
         </div>
     </div>
 
-    <!-- BAN LOCK OVERLAY -->
+    <!-- IRONCLAD BAN OVERLAY -->
     <div id="ban-screen">
         <div style="font-size: 4rem; margin-bottom: 15px;">🛡️</div>
         <h1 style="color: var(--danger); font-size: 2.2rem; margin-bottom: 8px;">Access Suspended</h1>
         <p style="color: var(--text-muted); max-width: 420px; font-size: 1rem; line-height: 1.5; margin-bottom: 20px;">
-            Your account has been restricted by server administration.
+            Your account has been restricted by server administration due to a violation of network rules.
         </p>
         <div id="ban-time-left" style="background: rgba(239, 68, 68, 0.08); border: 1px solid var(--danger); color: #f87171; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 1.05rem; display: none;"></div>
     </div>
@@ -295,8 +295,8 @@
             <button class="btn" onclick="window.startLocalMatch()">👥 Local Pass & Play</button>
             
             <div style="display: flex; gap: 8px; margin-top: 4px;">
-                <button class="btn btn-secondary" onclick="window.openHowToPlay()" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">📖 How To Play</button>
-                <button class="btn btn-secondary" onclick="alert('Global Leaderboards loading from server...')" style="flex: 1; padding: 12px 0; font-size: 0.85rem;">🏆 Leaderboard</button>
+                <button class="btn" style="flex: 1; border-color: var(--gold); color: var(--gold);" onclick="window.playPuzzle()">🧩 AI Puzzles</button>
+                <button class="btn btn-secondary" onclick="window.openHowToPlay()" style="flex: 1;">📖 How To Play</button>
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 2px;">
@@ -314,10 +314,9 @@
                 Welcome to Akshat's custom Chess Engine!
             </p>
             <ul style="color: var(--text-main); font-size: 0.85rem; margin-left: 18px; margin-bottom: 18px; line-height: 1.7;">
-                <li><strong>Moving:</strong> Tap a piece to see legal moves, then tap the destination. Or drag and drop!</li>
                 <li><strong>Voice Chat:</strong> During a match, tap "🎤 Mic" to talk to your opponent live!</li>
+                <li><strong>AI Puzzles:</strong> The puzzle engine randomly selects Mate in 1 or Mate in 2 scenarios. Stockfish AI will dynamically fight back and try to defend!</li>
                 <li><strong>Online Play:</strong> Create a room to get an invite link. Send the link to a friend to connect instantly anywhere in the world.</li>
-                <li><strong>Custom Chat:</strong> Use the quick-chat chips or type your own messages. The chat plays a pop sound so you never miss a message!</li>
             </ul>
             <button class="btn btn-primary" style="width: 100%;" onclick="window.closeHowToPlay()">Understood!</button>
         </div>
@@ -514,7 +513,6 @@
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
         let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
         
-        // Grab instant local memory to bypass login screen waiting
         window.playerName = localStorage.getItem('akshat_chess_user') || "";
         let playerPass = localStorage.getItem('akshat_chess_userpass') || "";
         window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
@@ -524,6 +522,42 @@
         let livePlayers = {};
         let allTimeSessionPlayers = new Set(); 
         let currentActivity = "Main Menu";
+
+        /* =========================================
+           IRONCLAD BAN ENFORCEMENT PROTOCOL
+        ========================================= */
+        window.checkBanStatus = function() {
+            let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
+            let banUntil = localStorage.getItem('akshat_chess_ban_until');
+
+            if (isBanned) {
+                if (banUntil && Date.now() > parseInt(banUntil)) {
+                    localStorage.removeItem('akshat_chess_banned');
+                    localStorage.removeItem('akshat_chess_ban_until');
+                    document.getElementById('ban-screen').style.display = 'none';
+                    document.body.style.pointerEvents = 'auto'; // Release lock
+                    return false;
+                } else {
+                    document.getElementById('ban-screen').style.display = 'flex';
+                    // Completely lock the UI behind the ban screen
+                    document.body.style.pointerEvents = 'none';
+                    document.getElementById('ban-screen').style.pointerEvents = 'auto';
+                    
+                    if (banUntil) {
+                        let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
+                        document.getElementById('ban-time-left').style.display = 'block';
+                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minutes.`;
+                    } else {
+                        document.getElementById('ban-time-left').style.display = 'none';
+                    }
+                    return true; // Banned
+                }
+            }
+            return false;
+        }
+
+        window.checkBanStatus();
+        banCheckTimer = setInterval(window.checkBanStatus, 10000); 
 
         /* =========================================
            FAILSAFE SPLASH SCREEN (Instantly Loads)
@@ -544,9 +578,11 @@
                 }, 1100);
             }, 100);
 
-            // MAGIC AUTO-LOGIN: If we remember them locally, boot straight to the game!
+            // MAGIC AUTO-LOGIN
             setTimeout(() => {
                 if(document.querySelectorAll('.screen.active').length === 0) {
+                    if(window.checkBanStatus()) return; // HARD STOP if banned
+
                     if (window.playerName !== "" && playerPass !== "") {
                         document.getElementById('plr-avatar').innerText = window.playerAvatar;
                         window.updateWelcomeTag();
@@ -557,7 +593,7 @@
                 }
             }, 2000);
 
-            try { initNet(); } catch(e) { console.error("Net Init Delayed", e); }
+            try { initNet(); } catch(e) {}
         });
 
         /* =========================================
@@ -580,7 +616,7 @@
                         setupCallEvents(call);
                     }
                 });
-            } catch(e) { console.log("PeerJS not loaded yet"); }
+            } catch(e) {}
         }
 
         function setupCallEvents(call) {
@@ -817,7 +853,7 @@
                     const p = livePlayers[id];
                     const isSelf = (id === mId) ? " <span style='font-size: 0.8rem; color:#6b7280;'>(You)</span>" : "";
                     
-                    let watchBtn = (p.fen && p.activity.includes("Match")) 
+                    let watchBtn = (p.fen && p.activity.includes("Match") && !p.activity.includes("Solving")) 
                         ? `<button class="btn-small btn-watch" onclick="window.spectatePlayer('${id}')">👁️ Watch Live</button>` 
                         : '';
 
@@ -896,7 +932,7 @@
         }
 
         /* =========================================
-           AI BOT PROFILES
+           AI BOT PROFILES & PUZZLE GENERATOR
         ========================================= */
         const ROSTER = [
             { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "Clicking random squares!"] },
@@ -917,11 +953,59 @@
             rg.appendChild(c);
         });
 
+        // MASSIVE AI PUZZLE ENGINE
+        window.playPuzzle = function() {
+            // A huge array of random tactical setups (Mate in 1 and Mate in 2s)
+            const MATE_PUZZLES = [
+                "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", // Scholar
+                "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", // Ladder mate
+                "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1", // Fool
+                "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1", // Back rank White
+                "k7/8/1K6/2Q5/8/8/8/8 w - - 0 1", // Queen edge mate
+                "1k6/1p6/1K6/8/8/8/1R6/8 w - - 0 1", // Rook edge mate
+                "r1b2r1k/pp2Nppp/8/2B5/4P3/8/PPP2PPP/R2R2K1 w - - 0 1", // Tactic 1
+                "r4rk1/1b3ppp/p7/1p1N4/8/1P6/1PP2PPP/R4RK1 w - - 0 1", // Tactic 2
+                "8/6pk/7p/8/1Q2p3/4P1P1/4qP1P/6K1 b - - 0 1", // Black to mate
+                "2r3k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1", // Back rank 2
+                "k7/P7/1K6/8/8/8/8/R7 w - - 0 1", // Anastasia style
+                "3r2k1/p4ppp/8/8/8/8/P4PPP/3R2K1 w - - 0 1",
+                "8/8/8/8/8/2k5/R7/Q1K5 w - - 0 1" // QR Mate
+            ];
+            
+            // Randomly generate the puzzle
+            let fen = MATE_PUZZLES[Math.floor(Math.random() * MATE_PUZZLES.length)];
+            let colorToPlay = fen.split(' ')[1] === 'w' ? 'white' : 'black';
+            
+            // Assign Stockfish AI to dynamically fight back
+            gMode = 'cpu';
+            aBot = { 
+                name: "Puzzle AI Defender", 
+                avatar: "🧠", 
+                rating: "Max", 
+                lvl: 20, 
+                tm: 800, 
+                quotes: ["Calculating defenses...", "I am fighting back!", "Can you find the forced sequence?"] 
+            };
+            
+            oppName = aBot.name; 
+            oppRank = "AI";
+            currentActivity = "Solving AI Puzzles";
+            
+            $('#opp-avatar').text(aBot.avatar); 
+            $('#opp-name').html(oppName); 
+            $('#btn-hint').show(); 
+            
+            document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">AI generated puzzle sequence. Find the Checkmate!</div>';
+            
+            window.startBrd(colorToPlay, 600, fen); 
+            window.setLog(`Puzzle Mode: AI Defender Activated`);
+        }
+
         /* =========================================
            ROUTER & NAVIGATION
         ========================================= */
         window.nav = function(id) { 
-            if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+            if(window.checkBanStatus()) return;
             $('.screen').removeClass('active'); 
             $('#' + id).addClass('active'); 
             
@@ -954,9 +1038,10 @@
         }
 
         window.sendPresence = function() {
+            if(window.checkBanStatus()) return;
             if (mq && mq.connected) {
                 let currentFen = null;
-                if(gm && currentActivity.includes("Match")) {
+                if(gm && currentActivity.includes("Match") || currentActivity.includes("Solving")) {
                     currentFen = gm.fen();
                 }
 
@@ -1032,8 +1117,12 @@
             });
         }
 
-        window.startBrd = function(or) {
-            gm.reset(); myCol = or[0]; tW = 600; tB = 600; clearInterval(tmr); tmr = setInterval(window.tick, 1000);
+        window.startBrd = function(or, timeSeconds = 600, customFen = null) {
+            gm.reset(); 
+            if(customFen) gm.load(customFen);
+            
+            myCol = or[0]; tW = timeSeconds; tB = timeSeconds; 
+            clearInterval(tmr); tmr = setInterval(window.tick, 1000);
             
             let pHTML = window.getBadgeHTML(window.playerRank);
             $('#plr-name').html(window.playerName + ' ' + pHTML);
@@ -1043,8 +1132,10 @@
             selectedSq = null;
             window.sendPresence(); 
             
+            let posConfig = customFen ? customFen : 'start';
+
             brd = Chessboard('board', {
-                draggable: true, position: 'start', orientation: or,
+                draggable: true, position: posConfig, orientation: or,
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
                 onDragStart: (s,p) => {
                     if(gm.game_over()||thinking) return false;
@@ -1127,6 +1218,7 @@
             } else { 
                 if(isCheck) { window.setLog('⚠️ Check!'); window.speak("Check."); } else { window.setLog(''); }
                 
+                // CRITICAL AI DEFENSE HOOK: If playing a Bot OR a Puzzle, Stockfish fights back!
                 if(gMode==='cpu' && gm.turn()!==myCol) { setTimeout(()=>window.askEng(aBot.lvl,aBot.tm), 250); } 
                 else if (gMode==='cpu' && gm.turn()===myCol) { window.triggerBotChat(isCheck, m.captured !== undefined); }
             }
@@ -1145,7 +1237,7 @@
         });
 
         window.setEval = function(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        window.tick = function() { if(gm.game_over()) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} }
+        window.tick = function() { if(gm.game_over() || currentActivity.includes("Solving")) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} }
         window.fmt = function(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
         window.drawClk = function() { $('#plr-clock').text(window.fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(window.fmt(myCol==='w'?tB:tW)); }
         
@@ -1208,7 +1300,7 @@
                 mq.subscribe(`nx_inbox_${mId}`);
                 mq.subscribe('nx_admin_cmd');
                 
-                if(localStorage.getItem('akshat_chess_banned') !== 'true') {
+                if(!window.checkBanStatus()) {
                     mq.subscribe('nx_presence_v1');
                     clearInterval(presenceTimer);
                     presenceTimer = setInterval(window.sendPresence, 3000);
@@ -1237,6 +1329,7 @@
                     }
                 }
 
+                // IRONCLAD ADMIN COMMAND RECEIVER
                 if (top === 'nx_admin_cmd' && d.key === ADMIN_PASS) {
                     if (d.cmd === 'announce') {
                         document.getElementById('announcement-text').innerText = d.text;
@@ -1244,13 +1337,29 @@
                         window.playMsgSfx();
                     }
                     if (d.cmd === 'ban' && d.target === mId) {
+                        
+                        // 1. Immediately lock local storage
+                        localStorage.setItem('akshat_chess_banned', 'true');
+                        if (d.duration && d.duration > 0) {
+                            let expiryTime = Date.now() + (d.duration * 60000);
+                            localStorage.setItem('akshat_chess_ban_until', expiryTime.toString());
+                        } else {
+                            localStorage.removeItem('akshat_chess_ban_until');
+                        }
+                        
+                        // 2. Quit active matches
+                        if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
+                        
+                        // 3. Write permanent ban to Firebase
                         if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
                             import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js").then(module => {
-                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true });
+                                module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: true }).then(() => {
+                                    window.location.reload(); // FORCE RELOAD TO LOCK SCREEN
+                                });
                             });
+                        } else {
+                            window.location.reload(); // FORCE RELOAD TO LOCK SCREEN
                         }
-                        if (aTop) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-                        document.getElementById('ban-screen').style.display = 'flex';
                     }
                     if (d.cmd === 'unban' && (d.target === mId || d.target === 'ALL')) {
                         if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
@@ -1258,6 +1367,8 @@
                                 module.updateDoc(module.doc(window.fbDb, "users", window.fbAuth.currentUser.uid), { isBanned: false });
                             });
                         }
+                        localStorage.removeItem('akshat_chess_banned');
+                        localStorage.removeItem('akshat_chess_ban_until');
                         alert("An administrator has removed your ban. Reloading system...");
                         window.location.reload();
                     }
@@ -1273,7 +1384,7 @@
                     }
                 }
 
-                if(localStorage.getItem('akshat_chess_banned') === 'true') return;
+                if(window.checkBanStatus()) return; // HARD STOP for incoming network events if banned
 
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
@@ -1459,7 +1570,6 @@
                 }
                 countEl.innerText = count;
             } catch (err) {
-                // If it fails, it's 99% because of Firebase Security Rules! Give explicit instructions.
                 if (err.message && err.message.toLowerCase().includes("permission")) {
                     listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger); border: 1px solid var(--danger); border-radius: 10px; background: rgba(239, 68, 68, 0.1); line-height: 1.6;">
                         <strong>Database Locked by Firebase Rules!</strong><br><br>
@@ -1486,15 +1596,26 @@
             msg.innerText = "Connecting to server...";
             const fakeEmail = uInput.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
 
-            // Instantly save to local memory for the fast-boot next time!
-            localStorage.setItem('akshat_chess_user', uInput);
-            localStorage.setItem('akshat_chess_userpass', pInput);
-            localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
-
             try {
                 await signInWithEmailAndPassword(auth, fakeEmail, pInput);
+                
+                // IRONCLAD BAN CHECK BEFORE LETTING THEM IN
+                const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+                if(docSnap.exists() && docSnap.data().isBanned) {
+                    localStorage.setItem('akshat_chess_banned', 'true');
+                    document.getElementById('ban-screen').style.display = 'flex';
+                    msg.innerText = "Account suspended.";
+                    await signOut(auth);
+                    return;
+                }
+
                 msg.innerText = "Logged in successfully!";
                 
+                // Save to Fast-Boot memory
+                localStorage.setItem('akshat_chess_user', uInput);
+                localStorage.setItem('akshat_chess_userpass', pInput);
+                localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
+
                 window.playerName = uInput;
                 window.playerAvatar = window.selectedAvatarIcon || "😎";
                 document.getElementById('plr-avatar').innerText = window.playerAvatar;
@@ -1521,6 +1642,11 @@
                     }
 
                     msg.innerText = "Account created!";
+                    
+                    localStorage.setItem('akshat_chess_user', uInput);
+                    localStorage.setItem('akshat_chess_userpass', pInput);
+                    localStorage.setItem('akshat_chess_avatar', window.selectedAvatarIcon || '😎');
+
                     window.playerName = uInput;
                     window.playerAvatar = window.selectedAvatarIcon || "😎";
                     document.getElementById('plr-avatar').innerText = window.playerAvatar;
@@ -1553,22 +1679,26 @@
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
+                    window.playerName = user.email.split('@')[0];
+                    window.playerRank = "";
+                    window.playerAvatar = "😎";
+                    
                     try {
                         const docSnap = await getDoc(doc(db, "users", user.uid));
                         if (docSnap.exists()) {
                             const data = docSnap.data();
                             
                             if(data.isBanned) {
+                                localStorage.setItem('akshat_chess_banned', 'true');
                                 document.getElementById('ban-screen').style.display = 'flex';
                                 signOut(auth);
-                                return;
+                                return; // HARD STOP
                             }
 
                             window.playerName = data.username || window.playerName;
                             window.playerRank = data.rank || "";
                             window.playerAvatar = data.avatar || "😎";
                             
-                            // Update local memory with the latest server data
                             localStorage.setItem('akshat_chess_user', window.playerName);
                             localStorage.setItem('akshat_chess_avatar', window.playerAvatar);
                         }
@@ -1579,7 +1709,6 @@
                     document.getElementById('plr-avatar').innerText = window.playerAvatar;
                     window.updateWelcomeTag();
                     
-                    // If they clicked an invite link, route them!
                     const urlParams = new URLSearchParams(window.location.search);
                     const joinId = urlParams.get('join');
                     if(joinId) {
@@ -1587,14 +1716,12 @@
                         setTimeout(() => window.joinRoom(joinId), 1000);
                     }
                 } else {
-                    // SILENT RE-AUTH: If they have a saved pass but Firebase logged out, re-log them silently!
                     let savedUser = localStorage.getItem('akshat_chess_user');
                     let savedPass = localStorage.getItem('akshat_chess_userpass');
                     
                     if (savedUser && savedPass) {
                         const fakeEmail = savedUser.toLowerCase().replace(/[^a-z0-9]/g, '') + "@akshatchess.com";
                         signInWithEmailAndPassword(auth, fakeEmail, savedPass).catch(err => {
-                            // If credentials changed, force a real login
                             localStorage.removeItem('akshat_chess_user');
                             localStorage.removeItem('akshat_chess_userpass');
                             if(document.querySelectorAll('.screen.active').length === 0 || document.getElementById('screen-home').classList.contains('active')) {
@@ -1606,7 +1733,6 @@
                     }
                 }
             } catch(e) {
-                console.log("Auth Error: Reverting to Login");
                 window.nav('screen-login');
             }
         });
