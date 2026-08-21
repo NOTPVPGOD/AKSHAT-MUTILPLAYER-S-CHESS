@@ -112,7 +112,7 @@
         select { background: #09090d; color: var(--text-main); border: 1px solid var(--border-subtle); padding: 10px 14px; border-radius: 8px; font-family: 'Plus Jakarta Sans'; outline: none; font-weight: 500; cursor: pointer; }
         select:focus { border-color: var(--accent); }
 
-        /* Admin UI Clean Design */
+        /* Admin UI */
         .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .admin-nav-btn { flex: 1; padding: 10px; background: #050507; border: 1px solid var(--border-subtle); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .admin-nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
@@ -257,7 +257,7 @@
         <div class="splash-status" id="splash-status">INITIALIZING GAME ENGINE...</div>
     </div>
 
-    <!-- LOGIN SCREEN (NO PASSWORD REQUIRED) -->
+    <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen active">
         <div class="logo">👋 Welcome!</div>
         <div class="subtitle">Enter a username to join the multiplayer server.</div>
@@ -505,7 +505,7 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
-    <!-- CORE GAME LOGIC (LAZY LOADED & UNBREAKABLE) -->
+    <!-- CORE GAME LOGIC -->
     <script>
         /* =========================================
            CORE STATE SYSTEM & PERSISTENT MEMORY
@@ -513,7 +513,7 @@
         let ADMIN_PASS = localStorage.getItem('akshat_admin_pass') || "notpvpgod9090"; 
         let mq = null;
         let mId = 'u_' + Math.random().toString(36).substr(2, 8);
-        let hostTimer = null, presenceTimer = null, banCheckTimer = null, aTop = null;
+        let hostTimer = null, presenceTimer = null, aTop = null;
         
         window.playerName = localStorage.getItem('akshat_chess_user') || "";
         window.playerAvatar = localStorage.getItem('akshat_chess_avatar') || "😎";
@@ -525,7 +525,7 @@
         let currentActivity = "Main Menu";
 
         /* =========================================
-           LAZY LOAD FIREBASE (Bypasses Adblockers)
+           LAZY LOAD FIREBASE
         ========================================= */
         const FB_CONFIG = {
             apiKey: "AIzaSyCD7xExcvlwdsO8KypoIYyfXj9M6k0X02s",
@@ -540,54 +540,81 @@
                 const db = fsMod.getFirestore(app);
                 return { db, ...fsMod };
             } catch(e) {
-                return null; // Silent catch if browser blocks Google scripts
+                return null;
             }
         };
 
         /* =========================================
-           IRONCLAD BAN ENFORCEMENT PROTOCOL
+           IRONCLAD BAN & UNBAN ENFORCEMENT PROTOCOL
         ========================================= */
-        window.applyBan = function(isPermanent = false) {
+        window.applyBan = function(duration = 0) {
             localStorage.setItem('akshat_chess_banned', 'true');
+            if (duration > 0) {
+                const banUntil = Date.now() + (duration * 60000);
+                localStorage.setItem('akshat_chess_ban_until', banUntil.toString());
+            } else {
+                localStorage.removeItem('akshat_chess_ban_until');
+            }
             if (window.playerName && window.playerName !== "Player" && window.playerName !== "") {
                 localStorage.setItem('akshat_chess_last_banned_user', window.playerName);
             }
-            localStorage.removeItem('akshat_chess_user'); // Delete Auto-Login
+            localStorage.removeItem('akshat_chess_user');
             
-            if (aTop && mq) mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId }));
-            window.location.reload(); 
-        }
+            if (aTop && mq) {
+                try { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); } catch(e){}
+            }
+            
+            window.checkBanStatus();
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        };
 
-        window.applyUnban = function() {
+        window.applyUnban = function(showAlert = true) {
             localStorage.removeItem('akshat_chess_banned');
             localStorage.removeItem('akshat_chess_ban_until');
-            alert("An administrator has removed your ban. You may now log back in.");
-            window.location.reload();
-        }
+            document.getElementById('ban-screen').style.display = 'none';
+            if (showAlert) {
+                alert("An administrator has removed your ban. You may now log back in.");
+            }
+            window.nav('screen-login');
+        };
 
         window.checkIfUnbanned = async function() {
             let user = localStorage.getItem('akshat_chess_last_banned_user');
             if (!user) {
-                window.applyUnban();
+                window.applyUnban(true);
                 return;
             }
             
             const fb = await window.getFB();
-            if (!fb) return alert("Database blocked by browser settings. Cannot verify unban status.");
+            if (!fb) {
+                let banUntil = localStorage.getItem('akshat_chess_ban_until');
+                if (banUntil && Date.now() > parseInt(banUntil)) {
+                    window.applyUnban(true);
+                } else {
+                    alert("Database blocked or offline. Suspension is still active.");
+                }
+                return;
+            }
             
             try {
                 const docSnap = await fb.getDoc(fb.doc(fb.db, "users", user));
-                if (docSnap.exists() && !docSnap.data().isBanned) {
-                    window.applyUnban();
-                } else if (!docSnap.exists()) {
-                    window.applyUnban(); // Account was wiped, effectively unbanned
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (!data.isBanned) {
+                        window.applyUnban(true);
+                    } else if (data.banUntil && Date.now() > data.banUntil) {
+                        await fb.updateDoc(fb.doc(fb.db, "users", user), { isBanned: false });
+                        window.applyUnban(true);
+                    } else {
+                        alert("Your account is still suspended by the Server Admin.");
+                    }
                 } else {
-                    alert("Your account is still suspended by the Server Admin.");
+                    window.applyUnban(true);
                 }
             } catch (err) {
                 alert("Could not check status: " + err.message);
             }
-        }
+        };
 
         window.checkBanStatus = function() {
             let isBanned = localStorage.getItem('akshat_chess_banned') === 'true';
@@ -603,17 +630,19 @@
                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('ban-screen').style.display = 'flex';
                     if (banUntil) {
-                        let minsLeft = Math.ceil((parseInt(banUntil) - Date.now()) / 60000);
+                        let minsLeft = Math.max(1, Math.ceil((parseInt(banUntil) - Date.now()) / 60000));
                         document.getElementById('ban-time-left').style.display = 'block';
-                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minutes.`;
+                        document.getElementById('ban-time-left').innerText = `Suspension lifts in approximately ${minsLeft} minute(s).`;
                     } else {
-                        document.getElementById('ban-time-left').style.display = 'none';
+                        document.getElementById('ban-time-left').style.display = 'block';
+                        document.getElementById('ban-time-left').innerText = `Suspension Type: Permanent Account Ban`;
                     }
                     return true;
                 }
             }
+            document.getElementById('ban-screen').style.display = 'none';
             return false;
-        }
+        };
 
         /* =========================================
            FAILSAFE LOGIN PROCESS
@@ -630,7 +659,16 @@
 
             let ctx = window.getAudioCtx();
             if (ctx && ctx.state === 'suspended') ctx.resume();
-        }
+
+            // Auto join match if join query param exists in URL
+            try {
+                let urlParams = new URLSearchParams(window.location.search);
+                let joinTarget = urlParams.get('join');
+                if (joinTarget) {
+                    setTimeout(() => window.joinRoom(joinTarget), 800);
+                }
+            } catch(e){}
+        };
 
         window.saveUsername = async function() {
             const uInput = document.getElementById('username-input').value.trim();
@@ -641,25 +679,24 @@
                 return;
             }
 
-            msg.innerText = "Connecting to server...";
+            msg.innerText = "Connecting to global database... (Please wait)";
             
-            // Failsafe timer: If database takes longer than 3.5s, let them play anyway.
             let isResolved = false;
             let fallbackTimer = setTimeout(() => {
                 if (!isResolved) {
                     isResolved = true;
-                    msg.innerText = "Server slow. Using Local Mode...";
-                    setTimeout(() => window.completeLogin(uInput), 1000);
+                    msg.innerText = "Server connection slow. Using Local Mode.";
+                    setTimeout(() => window.completeLogin(uInput), 1200);
                 }
-            }, 3500);
+            }, 10000);
 
             const fb = await window.getFB();
             if (!fb) {
                 if (!isResolved) {
                     isResolved = true;
                     clearTimeout(fallbackTimer);
-                    msg.innerText = "Network shielded. Local mode active.";
-                    setTimeout(() => window.completeLogin(uInput), 1000);
+                    msg.innerText = "Database blocked by shield. Local mode active.";
+                    setTimeout(() => window.completeLogin(uInput), 1200);
                 }
                 return;
             }
@@ -675,9 +712,17 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         if(data.isBanned) {
-                            msg.innerText = "Account suspended.";
-                            window.playerName = uInput;
-                            window.applyBan(); 
+                            if (data.banUntil && Date.now() > data.banUntil) {
+                                await fb.updateDoc(docRef, { isBanned: false });
+                                window.playerRank = data.rank || "";
+                                msg.innerText = "Logged in successfully!";
+                                window.completeLogin(uInput);
+                            } else {
+                                msg.innerText = "Account suspended.";
+                                window.playerName = uInput;
+                                let remaining = data.banUntil ? Math.ceil((data.banUntil - Date.now())/60000) : 0;
+                                window.applyBan(remaining); 
+                            }
                         } else {
                             window.playerRank = data.rank || "";
                             msg.innerText = "Logged in successfully!";
@@ -701,7 +746,7 @@
                     isResolved = true;
                     clearTimeout(fallbackTimer);
                     msg.innerText = "Database offline. Proceeding locally...";
-                    setTimeout(() => window.completeLogin(uInput), 1000);
+                    setTimeout(() => window.completeLogin(uInput), 1200);
                 }
             }
         };
@@ -716,21 +761,20 @@
                 if(docSnap.exists()) {
                     const data = docSnap.data();
                     if(data.isBanned) {
-                        window.applyBan(true);
+                        let remaining = data.banUntil ? Math.ceil((data.banUntil - Date.now())/60000) : 0;
+                        window.applyBan(remaining);
                     } else {
                         window.playerRank = data.rank || "";
                         window.updateWelcomeTag();
                     }
                 }
             } catch(e) {}
-        }
+        };
 
         /* =========================================
-           SPLASH SCREEN BOOT (Guaranteed Visuals)
+           SPLASH SCREEN BOOT
         ========================================= */
         document.addEventListener("DOMContentLoaded", () => {
-            
-            // 1. Instantly remove Splash Screen
             setTimeout(() => {
                 const bar = document.getElementById('splash-bar');
                 const status = document.getElementById('splash-status');
@@ -746,22 +790,27 @@
                 }, 1100);
             }, 100);
 
-            // 2. Guaranteed Screen Routing
             setTimeout(() => {
-                if(window.checkBanStatus()) return; // Lock if banned
+                if(window.checkBanStatus()) return;
 
                 if (window.playerName !== "") {
-                    // Route to home
                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('screen-home').classList.add('active');
                     
                     document.getElementById('plr-avatar').innerText = window.playerAvatar;
                     window.updateWelcomeTag();
                     
-                    // Background verify
                     window.verifyFirebaseAccount();
+
+                    // Auto-join handling if URL contains ?join=
+                    try {
+                        let urlParams = new URLSearchParams(window.location.search);
+                        let joinTarget = urlParams.get('join');
+                        if (joinTarget) {
+                            setTimeout(() => window.joinRoom(joinTarget), 500);
+                        }
+                    } catch(e){}
                 } else {
-                    // Ensure login screen is visible
                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('screen-login').classList.add('active');
                 }
@@ -833,7 +882,7 @@
                     btn.innerText = "🔇 Mic Off";
                 }
             }
-        }
+        };
 
         window.toggleOpponentMute = function() {
             const audioEl = document.getElementById('remote-audio');
@@ -849,7 +898,7 @@
                 btn.style.borderColor = "var(--border-subtle)";
                 btn.style.color = "var(--text-main)";
             }
-        }
+        };
 
         function stopVoiceChat() {
             if (localStream) {
@@ -874,7 +923,7 @@
             window.selectedAvatarIcon = icon;
             document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
             el.classList.add('selected');
-        }
+        };
 
         window.getBadgeHTML = function(rank) {
             if (!rank) return "";
@@ -883,24 +932,24 @@
             if (rank === "MOD") return '<span class="badge badge-mod">🛡️ MOD</span>';
             if (rank === "MASTER") return '<span class="badge badge-master">🏆 MASTER</span>';
             return `<span class="badge badge-vip">${rank}</span>`;
-        }
+        };
 
         window.updateWelcomeTag = function() {
             let badge = window.getBadgeHTML(window.playerRank);
             document.getElementById('welcome-text').innerHTML = `Connected as <strong>${window.playerName}</strong> ${badge}`;
-        }
+        };
 
         /* =========================================
            MODALS & OVERLAYS
         ========================================= */
-        window.openSettings = function() { document.getElementById('settings-modal').style.display = 'flex'; }
-        window.closeSettings = function() { document.getElementById('settings-modal').style.display = 'none'; }
-        window.changeTheme = function() { document.body.className = document.getElementById('theme-select').value; }
+        window.openSettings = function() { document.getElementById('settings-modal').style.display = 'flex'; };
+        window.closeSettings = function() { document.getElementById('settings-modal').style.display = 'none'; };
+        window.changeTheme = function() { document.body.className = document.getElementById('theme-select').value; };
         
-        window.openHowToPlay = function() { document.getElementById('howto-modal').style.display = 'flex'; }
-        window.closeHowToPlay = function() { document.getElementById('howto-modal').style.display = 'none'; }
+        window.openHowToPlay = function() { document.getElementById('howto-modal').style.display = 'flex'; };
+        window.closeHowToPlay = function() { document.getElementById('howto-modal').style.display = 'none'; };
         
-        window.closeAnnouncement = function() { document.getElementById('announcement-overlay').style.display = 'none'; }
+        window.closeAnnouncement = function() { document.getElementById('announcement-overlay').style.display = 'none'; };
 
         /* =========================================
            SECRET ADMIN TAP PROTOCOL
@@ -918,7 +967,7 @@
             } else {
                 adminTimeout = setTimeout(() => { adminTaps = 0; }, 1000);
             }
-        }
+        };
 
         function promptAdmin() {
             let entered = prompt("Enter Master Admin Passkey:");
@@ -937,7 +986,7 @@
             }
         }
 
-        window.closeAdmin = function() { document.getElementById('admin-modal').style.display = 'none'; }
+        window.closeAdmin = function() { document.getElementById('admin-modal').style.display = 'none'; };
 
         window.switchAdminTab = function(tab) {
             document.getElementById('tab-btn-live').classList.remove('active');
@@ -953,7 +1002,7 @@
                 document.getElementById('admin-db-section').style.display = 'flex';
                 if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
             }
-        }
+        };
 
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') { promptAdmin(); }
@@ -976,12 +1025,12 @@
                 specBoard = Chessboard('spec-board', { pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png', showNotation: false });
             }
             specBoard.position(livePlayers[id].fen);
-        }
+        };
 
         window.closeSpectate = function() {
             document.getElementById('spectate-modal').style.display = 'none';
             activeSpectateId = null;
-        }
+        };
 
         window.adminChangePassword = function() {
             let newPass = prompt("Enter new Admin Passkey:");
@@ -990,7 +1039,7 @@
                 localStorage.setItem('akshat_admin_pass', ADMIN_PASS);
                 alert("Admin passkey successfully updated.");
             }
-        }
+        };
 
         window.adminAnnounce = function() {
             let msg = prompt("Enter your message to broadcast to all online players:");
@@ -998,7 +1047,7 @@
                 mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'announce', text: msg.trim(), key: ADMIN_PASS }));
                 alert("Announcement broadcasted globally!");
             }
-        }
+        };
 
         window.renderAdminDashboard = function() {
             const now = Date.now();
@@ -1024,7 +1073,7 @@
                             </div>
                             <div class="actions">
                                 ${watchBtn}
-                                ${isSelf ? '' : `<button class="btn-small btn-danger" onclick="window.adminBanUser('${p.name}', '${id}')">🔨 Ban</button>`}
+                                ${isSelf ? '' : `<button class="btn-small btn-danger" onclick="window.adminBanUser('${p.name}', '${id}', this)">🔨 Ban</button>`}
                             </div>
                         </div>
                     `;
@@ -1033,11 +1082,8 @@
 
             document.getElementById('admin-player-count').innerText = count;
             list.innerHTML = count === 0 ? '<div style="text-align:center; color:#6b7280; padding: 25px;">No players active right now.</div>' : html;
-        }
+        };
 
-        /* 
-           DIRECT DATABASE ADMIN COMMANDS
-        */
         window.loadAllUsersForAdmin = async () => {
             const listEl = document.getElementById('admin-db-list');
             const countEl = document.getElementById('admin-total-db-count');
@@ -1066,7 +1112,7 @@
                         actionBtn = `<button class="btn-small btn-secondary" style="border-color: var(--success); color: var(--success);" onclick="window.adminUnbanUser('${d.id}')">✅ Unban</button>`;
                     } else {
                         if (d.id !== window.playerName) {
-                            actionBtn = `<button class="btn-small btn-danger" onclick="window.adminBanUser('${d.id}', null)">🔨 Ban</button>`;
+                            actionBtn = `<button class="btn-small btn-danger" onclick="window.adminBanUser('${d.id}', null, this)">🔨 Ban</button>`;
                         }
                     }
 
@@ -1077,7 +1123,7 @@
                             <div class="info">
                                 <div style="font-size: 1.15rem; font-weight: bold; display: flex; align-items: center;">
                                     <span style="font-size: 1.5rem; margin-right: 8px;">${data.avatar || '😎'}</span> 
-                                    ${data.username} ${isMe} ${badge} ${banTag}
+                                    ${data.username || d.id} ${isMe} ${badge} ${banTag}
                                 </div>
                             </div>
                             <div class="actions">
@@ -1099,42 +1145,71 @@
             }
         };
 
-        window.adminBanUser = async function(username, mqttId) {
+        // SINGLE-CLICK BAN ACTION
+        window.adminBanUser = async function(username, mqttId, btnElement) {
             if (username === window.playerName) { alert("Action blocked: Cannot ban yourself."); return; }
             
-            let choice = prompt(`Ban Protocol for ${username}:\n\n[1] Permanent Ban\n[2] 10-Minute Ban\n[3] 1-Hour Ban`);
-            let mins = -1;
-            if (choice === '1') mins = 0;
-            else if (choice === '2') mins = 10;
-            else if (choice === '3') mins = 60;
-            
-            if (mins !== -1) {
-                const fb = await window.getFB();
-                if(fb) {
-                    try { await fb.updateDoc(fb.doc(fb.db, "users", username), { isBanned: true }); } catch(e) {}
-                }
-                
-                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'ban_name', targetName: username, duration: mins, key: ADMIN_PASS }));
-                
-                if(mqttId && livePlayers[mqttId]) delete livePlayers[mqttId];
-                if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
-                window.renderAdminDashboard();
-                alert(`Player ${username} has been banned.`);
-            }
-        }
+            const targetUser = username.trim();
 
-        window.adminUnbanUser = async function(username) {
+            if (btnElement) {
+                btnElement.innerText = "⏳ Banning...";
+                btnElement.style.opacity = "0.7";
+                btnElement.style.pointerEvents = "none";
+            }
+
             const fb = await window.getFB();
             if(fb) {
                 try {
-                    await fb.updateDoc(fb.doc(fb.db, "users", username), { isBanned: false });
-                } catch(e) { alert("Error unbanning in database."); }
+                    await fb.setDoc(fb.doc(fb.db, "users", targetUser), { 
+                        isBanned: true,
+                        banUntil: null
+                    }, { merge: true });
+                } catch(e) {
+                    console.error("Firebase update error:", e);
+                }
             }
             
-            mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban_name', targetName: username, key: ADMIN_PASS }));
+            if (mq) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ 
+                    cmd: 'ban_name', 
+                    targetName: targetUser, 
+                    targetId: mqttId,
+                    duration: 0, 
+                    key: ADMIN_PASS 
+                }));
+            }
+            
+            setTimeout(() => {
+                if(mqttId && livePlayers[mqttId]) delete livePlayers[mqttId];
+                if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
+                window.renderAdminDashboard();
+                
+                alert("This player banned correctly.");
+            }, 600);
+        };
+
+        window.adminUnbanUser = async function(username) {
+            const targetUser = username.trim();
+            const fb = await window.getFB();
+            if(fb) {
+                try {
+                    await fb.setDoc(fb.doc(fb.db, "users", targetUser), { 
+                        isBanned: false,
+                        banUntil: null
+                    }, { merge: true });
+                } catch(e) { alert("Error unbanning in database: " + e.message); }
+            }
+            
+            if (mq) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ 
+                    cmd: 'unban_name', 
+                    targetName: targetUser, 
+                    key: ADMIN_PASS 
+                }));
+            }
             if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
-            alert(`Player ${username} has been unbanned!`);
-        }
+            alert(`Player "${targetUser}" has been unbanned.`);
+        };
 
         window.adminGlobalUnban = async function() {
             if(!confirm("Are you sure you want to lift all network bans globally?")) return;
@@ -1145,16 +1220,18 @@
                     const qs = await fb.getDocs(fb.collection(fb.db, "users"));
                     qs.forEach(async (d) => {
                         if (d.data().isBanned) {
-                            await fb.updateDoc(fb.doc(fb.db, "users", d.id), { isBanned: false });
+                            await fb.updateDoc(fb.doc(fb.db, "users", d.id), { isBanned: false, banUntil: null });
                         }
                     });
                 } catch(e) { alert("Error database unban: " + e.message); }
             }
 
-            mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: 'ALL', key: ADMIN_PASS }));
+            if (mq) {
+                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'unban', target: 'ALL', key: ADMIN_PASS }));
+            }
             if(window.loadAllUsersForAdmin) window.loadAllUsersForAdmin();
             alert("Global unban sequence complete!");
-        }
+        };
 
         window.adminWipeAccounts = async function() {
             if(!confirm("⚠️ DANGER: Are you sure you want to PERMANENTLY wipe all accounts EXCEPT yours?")) return;
@@ -1174,13 +1251,15 @@
                     }
                 });
                 
-                mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'wipe', exception: window.playerName, key: ADMIN_PASS }));
+                if (mq) {
+                    mq.publish('nx_admin_cmd', JSON.stringify({ cmd: 'wipe', exception: window.playerName, key: ADMIN_PASS }));
+                }
                 if(window.loadAllUsersForAdmin) setTimeout(window.loadAllUsersForAdmin, 1000);
                 alert(`Successfully wiped ${wipeCount} accounts from the database.`);
             } catch(e) {
                 alert("Error wiping accounts: " + e.message);
             }
-        }
+        };
 
         window.logOut = () => {
             localStorage.removeItem('akshat_chess_user');
@@ -1199,7 +1278,7 @@
             if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
             if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch(e){} }
             return audioCtx;
-        }
+        };
 
         window.playSfx = function(t) {
             if(document.getElementById('sound-select').value === 'off') return;
@@ -1211,7 +1290,7 @@
                 if (t === 'm') { o.frequency.setValueAtTime(320, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08); g.gain.setValueAtTime(0.25, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08); o.start(); o.stop(ctx.currentTime + 0.08); }
                 if (t === 'c') { o.type = 'triangle'; o.frequency.setValueAtTime(250, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.12); g.gain.setValueAtTime(0.3, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12); o.start(); o.stop(ctx.currentTime + 0.12); }
             } catch(e) {}
-        }
+        };
 
         window.playMsgSfx = function() {
             if(document.getElementById('sound-select').value === 'off') return;
@@ -1221,17 +1300,17 @@
                 const o = ctx.createOscillator(), g = ctx.createGain();
                 o.type = 'sine'; o.frequency.setValueAtTime(580, ctx.currentTime); o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.07); g.gain.setValueAtTime(0.15, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.07);
             } catch(e) {}
-        }
+        };
 
         window.speak = function(text) {
             if(document.getElementById('sound-select').value === 'off') return;
             let msg = new SpeechSynthesisUtterance(text);
             msg.rate = 1.1; msg.pitch = 0.9;
             window.speechSynthesis.speak(msg);
-        }
+        };
 
         /* =========================================
-           AI BOT PROFILES & MASSIVE PUZZLE GENERATOR
+           AI BOT PROFILES & PUZZLE GENERATOR
         ========================================= */
         const ROSTER = [
             { id: 'b1', name: 'Baby Bot', avatar: '👶', rating: '250', lvl: 0, tm: 100, quotes: ["Goo goo gaga?", "What does the horsey do? 🐴", "Clicking random squares!"] },
@@ -1254,7 +1333,6 @@
 
         window.playPuzzle = function() {
             const MATE_PUZZLES = [
-                // Mate in 1
                 "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1", 
                 "8/8/8/8/8/2k5/1R6/2K5 w - - 0 1", 
                 "rnb1kbnr/pppp1ppp/8/4p3/5P1q/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1", 
@@ -1270,8 +1348,6 @@
                 "7R/8/8/8/8/8/7R/k1K5 w - - 0 1", 
                 "8/1r6/8/8/2K5/k7/8/1R6 w - - 0 1", 
                 "8/p7/kp6/8/8/K7/8/R7 w - - 0 1",
-                
-                // Mate in 2
                 "r1b2r1k/pp2Nppp/8/2B5/4P3/8/PPP2PPP/R2R2K1 w - - 0 1", 
                 "r4rk1/1b3ppp/p7/1p1N4/8/1P6/1PP2PPP/R4RK1 w - - 0 1", 
                 "r2q1b1r/ppp1k1pp/8/3Bp3/3n4/5Q2/PPPP1PPP/RNB1K2R w KQ - 1 1", 
@@ -1300,7 +1376,7 @@
             
             window.startBrd(colorToPlay, 600, fen); 
             window.setLog(`Puzzle Mode: AI Defender Activated`);
-        }
+        };
 
         /* =========================================
            ROUTER & NAVIGATION
@@ -1315,11 +1391,11 @@
             
             window.sendPresence();
             if(id==='screen-match' && brd) setTimeout(()=>brd.resize(), 100); 
-        }
+        };
 
         window.returnToHome = function() {
             currentActivity = "Main Menu";
-            clearInterval(hostTimer);
+            if (hostTimer) { clearInterval(hostTimer); hostTimer = null; }
             stopVoiceChat();
 
             if(mq) {
@@ -1336,7 +1412,7 @@
             
             window.sendPresence();
             window.nav('screen-home');
-        }
+        };
 
         window.sendPresence = function() {
             if(window.checkBanStatus()) return;
@@ -1350,7 +1426,7 @@
                     id: mId, name: window.playerName || "Anonymous", rank: window.playerRank, activity: currentActivity, time: Date.now(), fen: currentFen
                 }));
             }
-        }
+        };
 
         /* =========================================
            STOCKFISH AI WORKER
@@ -1372,9 +1448,9 @@
             });
         } catch(e){}
 
-        window.askEng = function(lvl, tm) { if(gm.game_over() || !eng) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); }
-        window.reqHint = function() { if(gm.game_over()||thinking||!eng) return; hintReq = true; window.setLog('🧠 Calculating optimal path...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); }
-        window.showH = function(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); window.setLog('💡 Suggested vector displayed.'); } }
+        window.askEng = function(lvl, tm) { if(gm.game_over() || !eng) return; thinking = true; eng.postMessage(`setoption name Skill Level value ${lvl}`); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage(`go movetime ${tm}`); };
+        window.reqHint = function() { if(gm.game_over()||thinking||!eng) return; hintReq = true; window.setLog('🧠 Calculating optimal path...'); eng.postMessage(`position fen ${gm.fen()}`); eng.postMessage('go movetime 400'); };
+        window.showH = function(m) { $('.square-55d63').removeClass('highlight-hint'); if(m&&m!=='(none)') { $(`.square-${m.substring(0,2)}`).addClass('highlight-hint'); $(`.square-${m.substring(2,4)}`).addClass('highlight-hint'); window.setLog('💡 Suggested vector displayed.'); } };
 
         /* =========================================
            CHESS LOGIC & INTERACTION ENGINE
@@ -1392,7 +1468,7 @@
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Match started against AI</div>';
             window.startBrd('white'); window.setLog(`Match started vs ${oppName}`);
             setTimeout(() => { window.appendChat(b.quotes[0] || "Greetings.", 'opp'); }, 1000);
-        }
+        };
         
         window.startLocalMatch = function() { 
             gMode = 'local'; 
@@ -1403,9 +1479,9 @@
             $('#btn-hint').show(); 
             document.getElementById('chat-display').innerHTML = '<div class="chat-msg sys">Local Pass & Play Match Started</div>';
             window.startBrd('white'); window.setLog('Local Pass & Play started.'); 
-        }
+        };
 
-        window.clearHighlights = function() { $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected'); }
+        window.clearHighlights = function() { $('#board .square-55d63').removeClass('highlight-legal has-piece highlight-selected'); };
 
         window.showLegalMoves = function(sq) {
             window.clearHighlights();
@@ -1416,7 +1492,7 @@
                 targetSq.addClass('highlight-legal');
                 if (gm.get(m.to)) targetSq.addClass('has-piece'); 
             });
-        }
+        };
 
         window.startBrd = function(or, timeSeconds = 600, customFen = null) {
             gm.reset(); 
@@ -1459,7 +1535,7 @@
                 onSnapEnd: () => brd.position(gm.fen())
             });
             window.nav('screen-match');
-        }
+        };
 
         $(document).on('click', '#board .square-55d63', function() {
             if(gm.game_over() || thinking) return;
@@ -1490,7 +1566,7 @@
         window.applyMv = function(s, t, p) { 
             let m = gm.move({from:s,to:t,promotion:p}); 
             if(m) { brd.position(gm.fen()); window.playSfx(m.captured ? 'c' : 'm'); window.finishMv(m); } 
-        }
+        };
         
         window.triggerBotChat = function(isCheck, isCapture) {
             if(gMode !== 'cpu' || Math.random() > 0.4) return;
@@ -1500,7 +1576,7 @@
                 if(isCapture && Math.random() > 0.5) msg = "Material secured. 🎯";
                 window.appendChat(msg, 'opp');
             }, 800 + Math.random() * 1000);
-        }
+        };
 
         window.finishMv = function(m) {
             $('.square-55d63').removeClass('highlight-last highlight-hint'); $(`.square-${m.from}`).addClass('highlight-last'); $(`.square-${m.to}`).addClass('highlight-last');
@@ -1522,7 +1598,7 @@
                 if(gMode==='cpu' && gm.turn()!==myCol) { setTimeout(()=>window.askEng(aBot.lvl,aBot.tm), 250); } 
                 else if (gMode==='cpu' && gm.turn()===myCol) { window.triggerBotChat(isCheck, m.captured !== undefined); }
             }
-        }
+        };
 
         window.quitMatch = function() { 
             if(confirm("Are you sure you want to resign and exit?")) {
@@ -1530,16 +1606,16 @@
                 clearInterval(tmr); 
                 window.returnToHome(); 
             }
-        }
+        };
 
         window.addEventListener('beforeunload', () => {
             if (currentActivity.includes("Online Match") && mq && aTop) { mq.publish(aTop, JSON.stringify({ t: 'resign', s: mId })); }
         });
 
-        window.setEval = function(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); }
-        window.tick = function() { if(gm.game_over() || currentActivity.includes("Solving")) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} }
-        window.fmt = function(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; }
-        window.drawClk = function() { $('#plr-clock').text(window.fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(window.fmt(myCol==='w'?tB:tW)); }
+        window.setEval = function(s) { let p = 50+(s*5); $('#eval').css('height', Math.max(4,Math.min(96,p))+'%'); };
+        window.tick = function() { if(gm.game_over() || currentActivity.includes("Solving")) return; gm.turn()==='w'?tW--:tB--; window.drawClk(); if(tW<=0||tB<=0){clearInterval(tmr); window.setLog('⏰ Time expired. Session Over.');} };
+        window.fmt = function(s) { let m=Math.floor(Math.max(s,0)/60), sc=Math.max(s,0)%60; return `${m}:${sc<10?'0':''}${sc}`; };
+        window.drawClk = function() { $('#plr-clock').text(window.fmt(myCol==='w'?tW:tB)); $('#opp-clock').text(window.fmt(myCol==='w'?tB:tW)); };
         
         window.drawUI = function() {
             window.drawClk();
@@ -1551,8 +1627,8 @@
             const S={p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',P:'♟',N:'♞',B:'♝',R:'♜',Q:'♛'};
             let rW = cW.split('').map(x=>S[x]).join(''), rB = cB.split('').map(x=>S[x]).join('');
             myCol==='w' ? ($('#plr-cap').html(rW), $('#opp-cap').html(rB)) : ($('#plr-cap').html(rB), $('#opp-cap').html(rW));
-        }
-        window.setLog = function(t) { if(t) $('#match-status').html(t); }
+        };
+        window.setLog = function(t) { if(t) $('#match-status').html(t); };
 
         /* =========================================
            CHAT PIPELINE
@@ -1566,7 +1642,7 @@
             chatBox.scrollTop = chatBox.scrollHeight;
             
             if(type !== 'sys') window.playMsgSfx();
-        }
+        };
 
         window.sendChat = function(msg) {
             window.appendChat(msg, 'you');
@@ -1575,13 +1651,13 @@
             } else if (gMode === 'cpu') {
                 if(Math.random() > 0.5) setTimeout(() => { window.appendChat("Analyzing position...", 'opp'); }, 1000);
             }
-        }
+        };
         
         window.sendCustomChat = function() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if(msg) { window.sendChat(msg); input.value = ''; }
-        }
+        };
 
         document.getElementById('chat-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') window.sendCustomChat();
@@ -1635,21 +1711,40 @@
                         document.getElementById('announcement-overlay').style.display = 'flex';
                         window.playMsgSfx();
                     }
-                    if (d.cmd === 'ban_name' && d.targetName === window.playerName) {
-                        window.applyBan();
+                    
+                    // Instant ban match (username or session ID)
+                    if (d.cmd === 'ban_name') {
+                        const myCurrentName = (window.playerName || "").trim().toLowerCase();
+                        const myLastBanned = (localStorage.getItem('akshat_chess_last_banned_user') || "").trim().toLowerCase();
+                        const target = (d.targetName || "").trim().toLowerCase();
+                        
+                        if ((myCurrentName && myCurrentName === target) || (myLastBanned && myLastBanned === target) || (d.targetId && d.targetId === mId)) {
+                            window.applyBan(d.duration);
+                        }
                     }
-                    if (d.cmd === 'unban_name' && (d.targetName === window.playerName || d.targetName === localStorage.getItem('akshat_chess_last_banned_user'))) {
-                        window.applyUnban();
+                    
+                    // Instant unban match
+                    if (d.cmd === 'unban_name') {
+                        const myCurrentName = (window.playerName || "").trim().toLowerCase();
+                        const myLastBanned = (localStorage.getItem('akshat_chess_last_banned_user') || "").trim().toLowerCase();
+                        const target = (d.targetName || "").trim().toLowerCase();
+                        
+                        if ((myCurrentName && myCurrentName === target) || (myLastBanned && myLastBanned === target)) {
+                            window.applyUnban(true);
+                        }
                     }
+                    
                     if (d.cmd === 'unban' && d.target === 'ALL') {
-                        window.applyUnban();
+                        window.applyUnban(true);
                     }
+                    
                     if (d.cmd === 'wipe' && d.exception !== window.playerName) {
                         localStorage.removeItem('akshat_chess_user');
                         localStorage.removeItem('akshat_chess_avatar');
                         window.location.reload();
                     }
-                    if (d.cmd === 'rank' && d.targetName === window.playerName) {
+                    
+                    if (d.cmd === 'rank' && d.targetName.trim().toLowerCase() === (window.playerName || "").trim().toLowerCase()) {
                         window.playerRank = d.rank;
                         window.updateWelcomeTag();
                         alert(`🎉 An administrator awarded you the rank: ${d.rank}!`);
@@ -1658,6 +1753,7 @@
 
                 if(window.checkBanStatus()) return;
 
+                // LOBBY BROWSER
                 if(top === 'nx_lobby_v3') {
                     if(d.a === 'host' && d.id !== mId && currentActivity === "Browsing Lobby") {
                         $('#room-list').find('.searching-msg').remove();
@@ -1680,9 +1776,10 @@
                     }
                 }
 
+                // DIRECT INBOX FOR ROOM MATCHMAKING
                 if(top === `nx_inbox_${mId}`) {
                     if(d.a === 'join' && currentActivity === "Hosting a Match Room") {
-                        clearInterval(hostTimer);
+                        if (hostTimer) { clearInterval(hostTimer); hostTimer = null; }
                         oppId = d.id; 
                         aTop = `nx_rm_${mId}`; 
                         oppName = d.n ? d.n : "Challenger";
@@ -1694,6 +1791,7 @@
                         window.joinNet('white'); 
                     }
                     if(d.a === 'start' && currentActivity === "Connecting to Room...") {
+                        if (hostTimer) { clearInterval(hostTimer); hostTimer = null; }
                         aTop = d.r; 
                         oppName = d.n ? d.n : "Host";
                         oppRank = d.rk || "";
@@ -1704,6 +1802,7 @@
                     }
                 }
 
+                // IN-GAME MATCH COMMUNICATION
                 if(top === aTop && currentActivity.includes("Online Match")) {
                     if(d.t === 'm' && d.s !== mId) window.applyMv(d.f, d.to, d.p);
                     if(d.t === 'chat' && d.s !== mId) {
@@ -1735,7 +1834,7 @@
                 mq.subscribe('nx_lobby_v3');
                 mq.publish('nx_lobby_v3', JSON.stringify({a:'who'})); 
             }, 500);
-        }
+        };
 
         window.hostMatch = function() {
             currentActivity = "Hosting a Match Room";
@@ -1747,38 +1846,43 @@
             let inviteLink = baseURL + "?join=" + mId;
             document.getElementById('invite-link').value = inviteLink;
 
-            clearInterval(hostTimer);
+            if (hostTimer) clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Hosting a Match Room") mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
+                if(currentActivity === "Hosting a Match Room" && mq && mq.connected) {
+                    mq.publish('nx_lobby_v3', JSON.stringify({a:'host', id:mId, n:window.playerName, r:window.playerRank}));
+                }
             }, 1500);
-        }
+        };
 
         window.copyInvite = function() {
             let copyText = document.getElementById("invite-link");
             copyText.select();
             navigator.clipboard.writeText(copyText.value);
             alert("Invite link copied! Send it to your friend.");
-        }
+        };
 
         window.joinRoom = function(hostId) {
             oppId = hostId; 
             if(!mq || !mq.connected) initNet(); 
             currentActivity = "Connecting to Room...";
+            window.nav('screen-lobby');
             $('#lobby-ui').hide(); $('#host-ui').show(); 
             $('#host-msg').text("Connecting to room...");
             
-            clearInterval(hostTimer);
+            if (hostTimer) clearInterval(hostTimer);
             hostTimer = setInterval(() => {
-                if(currentActivity === "Connecting to Room...") mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:window.playerName, r:window.playerRank}));
+                if(currentActivity === "Connecting to Room..." && mq && mq.connected) {
+                    mq.publish(`nx_inbox_${hostId}`, JSON.stringify({a:'join', id:mId, n:window.playerName, r:window.playerRank}));
+                }
             }, 1000);
-        }
+        };
 
         window.joinNet = function(col) {
             mq.subscribe(aTop); gMode = 'net';
             $('#btn-hint').hide();
             document.getElementById('chat-display').innerHTML = `<div class="chat-msg sys">🔗 Connected to match!</div>`;
             window.startBrd(col); window.setLog('Match started.');
-        }
+        };
 
         window.addEventListener('resize', () => { if(brd) brd.resize(); });
     </script>
